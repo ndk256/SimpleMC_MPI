@@ -1,13 +1,16 @@
 #include "header.h"
 
 // Main logic to move particle
-void transport(Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, Particle *p)
+void transport(Parameters *parameters, Geometry *geometry, double local_bounds[6], Material *material, Particle send_bank[][6], int send_indices, Bank *fission_bank, Tally *tally, Particle *p)
 {
   double d_b;
   double d_c;
+  double d_e;
   double d;
 
   while(p->alive){
+    // Find distance to process boundary
+    d_e = dist_to_edge(p, local_bounds);
 
     // Find distance to boundary
     d_b = distance_to_boundary(geometry, p);
@@ -15,8 +18,10 @@ void transport(Parameters *parameters, Geometry *geometry, Material *material, B
     // Find distance to collision
     d_c = distance_to_collision(material);
 
-    // Take smaller of two distances
-    d = d_b < d_c ? d_b : d_c;
+    // Take smallest of the distances
+    if(d_e < d_b && d_e < d_c) d= d_e;
+    else if (d_b < d_e && d_b < d_c) d = d_b;
+    else d=d_c;
 
     // Advance particle
     p->x = p->x + d*p->u;
@@ -24,9 +29,15 @@ void transport(Parameters *parameters, Geometry *geometry, Material *material, B
     p->z = p->z + d*p->w;
 
     // Case where particle crosses boundary
-    if(d_b < d_c){
+    if(d_b < d_c&& d_b<= d_e){ ///unsure about use of < versus <=
       cross_surface(geometry, p);
     }
+    
+    else if((d_e < d_c && d_e < d_b) ///unsure about use of < versus <=
+    {
+    cross_process(local_bounds, p, send_bank, send_indices);
+    }
+    
     // Case where particle has collision
     else{
       collision(material, fission_bank, parameters->nu, p);
@@ -40,6 +51,33 @@ void transport(Parameters *parameters, Geometry *geometry, Material *material, B
   return;
 }
 
+///Returns distance to nearest boundary of the process subdivision
+ double dist_to_edge(Particle *p, double s_coords[])
+  {
+  ///mostly just a copy-paste of the distance_to_boundary function.
+  int i; double dist;
+     double d = D_INF;
+     double p_angles[6] = {p->u, p->u, p->v, p->v, p->w, p->w};
+     double p_coords[6] = {p->x, p->x, p->y, p->y, p->z, p->z};
+  
+     for(i=0; i<6; i++){
+        if(p_angles[i] == 0){
+          dist = D_INF;
+          }
+          else{
+            dist = (s_coords[i] - p_coords[i])/p_angles[i];
+           if(dist <= 0){
+             dist = D_INF;
+        }
+    
+          if(dist < d){
+            d = dist;
+          }
+        }
+     }
+        return d;
+    }
+            
 // Returns the distance to the nearest boundary for a particle traveling in a
 // certain direction
 double distance_to_boundary(Geometry *geometry, Particle *p)
@@ -206,4 +244,21 @@ void collision(Material *material, Bank *fission_bank, double nu, Particle *p)
   }
 
   return;
+}
+
+            
+///handles particle crossing into another process's subdomain
+///rather, simply sends it to a buffer which will be passed out to the appropriate process later on
+    void cross_process(double localbounds[], Particle *p, Particle sendbank[][6], int indices[])
+    {
+     if(p->x==localbounds[0]) {sendbank[0][indices[0]] = *p; indices[0]++;}
+     if(p->x==localbounds[1]) {sendbank[1][indices[1]] = *p; indices[1]++;}
+     if(p->y==localbounds[2]) {sendbank[2][indices[2]] = *p; indices[2]++;}
+     if(p->y==localbounds[3]) {sendbank[3][indices[3]] = *p; indices[3]++;}
+     if(p->z==localbounds[4]) {sendbank[4][indices[4]] = *p; indices[4]++;}
+     if(p->z==localbounds[5]) {sendbank[5][indices[5]] = *p; indices[5]++;}
+    
+    p->alive=FALSE; ///this is merely temporary. it'll get better.
+    
+    return;
 }
