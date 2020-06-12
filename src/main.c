@@ -2,22 +2,23 @@
 
 int main(int argc, char *argv[])
 {
-  Parameters *parameters; // user defined parameters
+  Parameters *parameters, *local_par; // user defined parameters
   Geometry *geometry; // homogenous cube geometry
   Material *material; // problem material
   Bank *source_bank; // array for particle source sites
   Bank *fission_bank; // array for particle fission sites
-  Tally *tally; // scalar flux tally
-  double *keff; // effective multiplication factor
-  double t1, t2; // timers
+  Tally *mytally, *global_tally; // scalar flux tallies
+  double *keff, *mykeff; // effective multiplication factor
+  double t1, t2; // timers--may need changing
 
   // Get inputs: set parameters to default values, parse parameter file,
   // override with any command line inputs, and print parameters
   parameters = init_parameters();
   parse_parameters(parameters);
   read_CLI(argc, argv, parameters);
-  print_parameters(parameters);
-  
+  print_parameters(parameters);  ///may need to be only on rank==0
+  local_par = localize_parameters(parameters, prcperdim);
+
   MPI_Init(&argc, &argv);
   int prcsize, myrank, prcperdim[3], periodicity[3]={0,0,0};
 
@@ -38,11 +39,11 @@ int main(int argc, char *argv[])
   MPI_Type_commit(&PARTICLE);
   
   // Set initial RNG seed
-  set_initial_seed(parameters->seed);
+  set_initial_seed(parameters->seed); //may need changing (only do on rank==0?)
   set_stream(STREAM_INIT);
 
   // Create files for writing results to
-  init_output(parameters);
+  if(myrank==0) init_output(parameters);
 
   // Set up geometry
   geometry = init_geometry(parameters);
@@ -69,39 +70,56 @@ int main(int argc, char *argv[])
   material = init_material(parameters);
 
   // Set up tallies
-  tally = init_tally(parameters);
+  global_tally = init_tally(parameters);
+  my_tally = init_tally(local_par);
 
   // Create source bank and initial source distribution
-  source_bank = init_source_bank(parameters, geometry);
-
-  // Create fission bank
+  my_sourcebank = init_source_bank(parameters, geometry); ///unsure of arguments
+  if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
+  {source_bank = init_source_bank(parameters, geometry);
+  distribute_sb(mycoords, prcperdim, myrank, spatialgrid, source_bank, my_sourcebank);
+  }
+  else distribute_sb(mycoords, prcperdim, myrank, spatialgrid, my_sourcebank, my_sourcebank);
+  
+  ///free source_bank right now??
+  
+  // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
 
   // Set up array for k effective
   keff = calloc(parameters->n_active, sizeof(double));
-
+  mykeff = calloc(local_par->n_active,sizeof(double)); ///unsure if correct
+  
+  if(myrank==0){
   center_print("SIMULATION", 79);
   border_print();
   printf("%-15s %-15s %-15s\n", "BATCH", "KEFF", "MEAN KEFF");
-
+  }
+  
   // Start time
   t1 = timer();
+  ////Likely needs modification
+  
+  run_eigenvalue(cube, myrank, myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);
 
-  run_eigenvalue(parameters, geometry, material, source_bank, fission_bank, tally, keff);
-
+  ///aggregate the tally///
+  if(myrank==0){
+    MPI_Reduce(mytally->flux, global_tally->flux, parameters->n_particles, MPI_DOUBLE, MPI_SUM, 0, cube);
+    }
+  
   // Stop time
   t2 = timer();
 
   printf("Simulation time: %f secs\n", t2-t1);
 
   // Free memory
-  free(keff);
-  free_tally(tally);
+  free(keff); free(mykeff);
+  free_tally(global_tally); free(mytally);
   free_bank(fission_bank);
-  free_bank(source_bank);
+  if(myrank==0) free_bank(source_bank); ///may change
   free_material(material);
   free(geometry);
-  free(parameters);
+  free(parameters); free(local_par);
   
   MPI_Type_free(&PARTICLE);
   MPI_Comm_free(&cube);
