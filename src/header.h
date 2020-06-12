@@ -156,15 +156,23 @@ void free_bank(Bank *b);
 void free_material(Material *material);
 void free_tally(Tally *tally);
 
+///localize.c function prototypes
+ Parameters *localize_parameters(Parameters *par, int dims[6]);
+ void distrib_particle(int prcoords[3], int dim, MPI_Comm comm, Bank *sb, int myrank);
+ void distribute_sb(int mycoords[3], int prcoords[3], int myrank, MPI_Comm comm, Bank *sb, Bank *mysb);
+
 // transport.c function prototypes
-void transport(Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, Particle *p);
+void transport(Parameters *parameters, Geometry *geometry, double local_bounds[6], Material *material, Particle send_bank[][6], int send_indices[6], Bank *fission_bank, Tally *tally, Particle *p);
 double distance_to_boundary(Geometry *geometry, Particle *p);
 double distance_to_collision(Material *material);
+double dist_to_edge(Particle *p, double s_coords[6]);
 void cross_surface(Geometry *geometry, Particle *p);
+void cross_process(double localbounds[6], Particle *p, Particle sendbank[][6], int indices[6]);
 void collision(Material *material, Bank *fission_bank, double nu, Particle *p);
 
 // eigenvalue.c function prototypes
-void run_eigenvalue(Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff);
+void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff);
+void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6], int my_neighb[6], double mybounds[], MPI_Comm comm);
 void synchronize_bank(Bank *source_bank, Bank *fission_bank);
 void calculate_keff(double *keff, double *mean, double *std, int n);
 
