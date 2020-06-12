@@ -1,0 +1,35 @@
+Start with the source code, which represents a simplified serial Monte
+Carlo neutral particle transport code. Your task is to develop and benchmark
+an MPI-based parallel version. Studying the serial code for a short
+period should make the algorithm clear -- basically the code moves
+non-interacting neutrons one by one through a homogenous medium,
+determining their distance to absorption and possibility of creating
+new neutrons (via fission) using random numbers. When fissions occur
+physical space region they are "tallied" (i.e. recorded in a
+discretized physical space region), and this process proceeds over
+many neutron "generations". Particles are born according to a "source
+bank" (gives list of starting locations of particles as 3-D
+coordinates), and after absorption those particles that create new
+particles via fission are stored in the "fission bank". The fission
+bank after one generation produces the source bank for the next, with
+the only constraint being that the total number of particles much not
+change between generations (thus the fission bank is sampled to
+produce the source bank, not copied directly). The algorithm proceeds
+in as such over many generations until the statistical error is deemed
+sufficiently small.
+
+These details are already programmed into the code - you do not have
+to reproduce them.  Your job will be to parallelize this code by doing
+simple domain decomposition.  The rule is that that the tallies,
+source bank, and fission bank may NOT be stored globally, but must be
+decomposed spatially. Note that particles must be moved to neighbor
+processors when they jump domain boundaries. This means you will need
+to determine the communication schedule dynamically -- who sends how
+much data to whom.
+
+Along with a working domain decomposed parallel version of the code,
+analyze the code's scalability -- how does it perform with increasing
+MPI processes.
+
+A README document for the code will be included which describes the main
+data structures in more detail.
