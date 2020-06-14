@@ -32,7 +32,7 @@ void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbound
 
       //set up buffer array for cross-process transport
         Particle sendbank[parameters->n_particles][6];
-        int send_indices[6] = { }; ///initializes empty array
+        int send_indices[6] = { }; //initializes empty array
 	    
       // Loop over particles
       for(i_p=0; i_p<parameters->n_particles; i_p++){
@@ -46,30 +46,29 @@ void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbound
         transport(parameters, geometry, localbounds, material, sendbank, send_indices, fission_bank, tally, &(source_bank->p[i_p]);
       }
 		  
-while(send_indices[0]>0 || send_indices[1]>0 || send_indices[2]>0 || send_indices[3]>0 || send_indices[4]>0 || send_indices[5]>0){
-  ///send particles to the instance of source_bank on the appropriate process
+ while(send_indices[0]>0 || send_indices[1]>0 || send_indices[2]>0 || send_indices[3]>0 || send_indices[4]>0 || send_indices[5]>0){
+  // send particles to the instance of source_bank on the appropriate process
   sendrecv_particles(source_bank, sendbank, send_indices, myneighb, localbounds, comm);
   
     ///transport those particles
-  for(int i_p2 =0; i_p2<source_bank->n; i_p2++){ 
-	  rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p); ///may need changing
-     ///transport particle(s)
-     transport(parameters, geometry, localbounds, material, sendbank, send_indice    s, fission_bank, tally, &(source_bank->p[i_p2]));
-  }
+    for(int i_p2 =0; i_p2<source_bank->n; i_p2++){ 
+     rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p); ///may need changing
+     transport(parameters, geometry, localbounds, material, sendbank, send_indices, fission_bank, tally, &(source_bank->p[i_p2]));
+    }
   }			
 						
       // Switch RNG stream off tracking
       set_stream(STREAM_OTHER);
       rn_skip(i_b*parameters->n_generations + i_g);
 
-	if(myrank==0){
-        int total_fiss;
-        MPI_Reduce(&fission_bank->n, &total_fiss, 1, MPI_INT, MPI_SUM, 0, comm);
+      
+       int total_fiss;
+       MPI_Reduce(&fission_bank->n, &total_fiss, 1, MPI_INT, MPI_SUM, 0, comm);
 		  
-      // Calculate generation k_effective and accumulate batch k_effective
-      keff_gen = (double) total_fiss / parameters->n_particles; ///unsure if parameters->n_particles is the right value
-      keff_batch += keff_gen;
-	}
+       // Calculate generation k_effective and accumulate batch k_effective
+       keff_gen = (double) total_fiss / parameters->n_particles; ///unsure if parameters->n_particles is the right value
+       keff_batch += keff_gen;
+      
 		  
       // Sample new source particles from the particles that were added to the
       // fission bank during this generation
