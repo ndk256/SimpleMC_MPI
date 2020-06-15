@@ -1,6 +1,6 @@
 # User options
 
-COMPILER = gnu
+COMPILER = mpicc
 OPTIMIZE = yes
 DEBUG    = no
 
@@ -38,8 +38,8 @@ ifeq ($(OPTIMIZE),yes)
   CFLAGS += -O3
 endif
 
-ifeq ($(COMPILER),gnu)
-  CC = gcc
+ifeq ($(COMPILER),mpicc)
+  CC = mpicc
 endif
 
 # Targets to build
