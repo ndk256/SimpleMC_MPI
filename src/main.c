@@ -103,9 +103,8 @@ int main(int argc, char *argv[])
   run_eigenvalue(cube, myrank, myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);
 
   ///aggregate the tally///
-  if(myrank==0){
     MPI_Reduce(mytally->flux, global_tally->flux, parameters->n_particles, MPI_DOUBLE, MPI_SUM, 0, cube);
-    }
+    
   
   // Stop time
   t2 = timer();
