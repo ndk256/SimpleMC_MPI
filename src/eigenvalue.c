@@ -90,15 +90,15 @@ void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbound
           write_tally(overall_tally, parameters->tally_file);///
   
        reset_tally(overall_tally);
-    }}
+    }}}
 
     // Status text
-    if(myrank==0) print_status(i_a, i_b, keff_batch, keff_mean, keff_std);
+    if(myrank==0) {print_status(i_a, i_b, keff_batch, keff_mean, keff_std);
 
 
   // Write out keff
   if(parameters->write_keff == TRUE){
-    write_keff(keff, parameters->n_active, parameters->keff_file);
+    write_keff(keff, parameters->n_active, parameters->keff_file);}
   }
 
   return;
