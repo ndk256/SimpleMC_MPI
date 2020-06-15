@@ -8,6 +8,7 @@ Parameters *localize_parameters(Parameters *par,int dims[])
    p->gx = par->gx/dims[0];
    p->gy = par->gy/dims[1];
    p->gz = par->gz/dims[2];
+   p->n_bins = par->n_bins/((dims[0]+dims[1]+dims[2])/3); ///hopefully this is a good enough approximation
    return p;
 }
 
