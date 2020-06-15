@@ -104,7 +104,7 @@ void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbound
 		  
 void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6], int myneighb[6], double mybounds[6], MPI_Comm comm)
  {
- bank->n=0; bank->sz=0; ///unsure if necc
+ /// To do: re-allocate bank->p memory? check if necessary
  
  MPI_Status status; int n_to_recv, recv_count=0;
  MPI_Request reqs[6];
@@ -126,36 +126,35 @@ void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6],
  
  MPI_Probe(myneighb[1], 0, comm, &status);
  MPI_Get_count(&status, PARTICLE, &n_to_recv);
- MPI_Recv(bank->p+recv_count, n_to_recv, PARTICLE, myneighb[1], 0, comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, PARTICLE, myneighb[1], 0, comm, MPI_STATUS_IGNORE);
  recv_count+=n_to_recv;
- 
- //int b_ind=recv_count;
- 
+ 	 
  // sorting through the received particles to see which have/n't reached their final destination
- for(int i=0; i<recv_count; i++){
+ for(int i=0; i<b_ind; i++){
   if(bank->p[i].y < mybounds[3] && bank->p[i].y >= mybounds[2] && bank->p[i].z < mybounds[5] && bank->p[i].z >= mybounds[4])
     {bank->p[i].alive = TRUE;} ///if it's in the right place it can be deemed alive again
   else if(bank->p[i].y < mybounds[2]) {
     sendbank[send_indices[2]][2] = bank->p[i]; 
-    send_indices[2]++; recv_count--;
-    }
+    send_indices[2]++;}
   else if(bank->p[i].y >= mybounds[3]) {
     sendbank[send_indices[3]][3] = bank->p[i];
-    send_indices[3]++; recv_count--;}
+    send_indices[3]++;}
   else if(bank->p[i].z < mybounds[4]) {
     sendbank[send_indices[4]][4] = bank->p[i]; 
-    send_indices[4]++; recv_count--;}
+    send_indices[4]++;}
   else if(bank->p[i].z >= mybounds[5]) {
     sendbank[send_indices[5]][5] = bank->p[i]; 
-    send_indices[5]++; recv_count--;}
+    send_indices[5]++;}
  }
  
  MPI_Wait(&reqs[0], MPI_STATUS_IGNORE);
  MPI_Wait(&reqs[1], MPI_STATUS_IGNORE);
+
+ int b_ind = recv_count;
 	 
  // sending along y direction
- MPI_Isend(sendbank[][2], send_indices[2]+1, PARTICLE, myneighb[2], 2, comm,&reqs[2]);
- MPI_Isend(sendbank[][3], send_indices[3]+1, PARTICLE, myneighb[3], 3, comm,&reqs[3]);
+ ///MPI_Isend(sendbank[][2], send_indices[2]+1, PARTICLE, myneighb[2], 2, comm,&reqs[2]);
+ ////MPI_Isend(sendbank[][3], send_indices[3]+1, PARTICLE, myneighb[3], 3, comm,&reqs[3]);
  
  send_indices[2]=0; send_indices[3]=0; //resetting
  
@@ -163,35 +162,33 @@ void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6],
  MPI_Probe(myneighb[2], 3, comm, &status);
  MPI_Get_count(&status, PARTICLE, &n_to_recv);
  
- MPI_Recv(bank->p+recv_count, n_to_recv, PARTICLE, myneighb[2], 3, comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, PARTICLE, myneighb[2], 3, comm, MPI_STATUS_IGNORE);
  recv_count+= n_to_recv;
  
  MPI_Probe(myneighb[3], 2, comm, &status);
  MPI_Get_count(&status, PARTICLE, &n_to_recv);
  
- MPI_Recv(bank->p+recv_count, n_to_recv, PARTICLE, myneighb[3], 2, comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, PARTICLE, myneighb[3], 2, comm, MPI_STATUS_IGNORE);
  recv_count+= n_to_recv;
  
  // sorting through newly received particles
- for(int i=recv_count; i<recv_count; i++) ///may need b_ind for here
+ for(int i=b_ind; i<recv_count; i++) ///may need b_ind for here
    {if(bank->p[i].z < mybounds[5] && bank->p[i].z >= mybounds[4])
       {bank->p[i].alive = TRUE;} ///if it's in the right place it can be deemed alive again
     else if(bank->p[i].z < mybounds[4]) 
       {sendbank[send_indices[4]][4] = bank->p[i];
-       send_indices[4]++; recv_count--;}
+       send_indices[4]++;}
     else if(bank->p[i].z >= mybounds[5]) {
        sendbank[send_indices[5]][5] = bank->p[i]; 
-       send_indices[5]++; recv_count--;}
+       send_indices[5]++;}
    }
- 
- //b_ind=recv_count;
- 
+  
  MPI_Wait(&reqs[2], MPI_STATUS_IGNORE);
  MPI_Wait(&reqs[3], MPI_STATUS_IGNORE);
 
  // send along z direction
- MPI_Isend(sendsegz, send_indices[4], PARTICLE, myneighb[4], 4, comm,&reqs[4]    );
- MPI_Isend(sendsegzz, send_indices[5], PARTICLE, myneighb[5], 5, comm,&reqs[5    ]);
+ ////MPI_Isend(sendsegz, send_indices[4], PARTICLE, myneighb[4], 4, comm,&reqs[4]    );
+ ////MPI_Isend(sendsegzz, send_indices[5], PARTICLE, myneighb[5], 5, comm,&reqs[5    ]);
  
  send_indices[4]=0; send_indices[5]=0;
  
@@ -199,13 +196,13 @@ void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6],
  MPI_Probe(myneighb[4], 5, comm, &status);
  MPI_Get_count(&status, PARTICLE, &n_to_recv);
  
- MPI_Recv(bank->p+b_ind, n_to_recv, PARTICLE, myneighb[4], 5, comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, PARTICLE, myneighb[4], 5, comm, MPI_STATUS_IGNORE);
  recv_count+=n_to_recv;
  
  MPI_Probe(myneighb[5], 4, comm, &status);
  MPI_Get_count(&status, PARTICLE, &n_to_recv);
  
- MPI_Recv(bank->p+b_ind, n_to_recv, PARTICLE, myneighb[5], 4, comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, PARTICLE, myneighb[5], 4, comm, MPI_STATUS_IGNORE);
  recv_count+=n_to_recv;
  
  MPI_Wait(&reqs[4], MPI_STATUS_IGNORE);
