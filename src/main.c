@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
   Bank *fission_bank; // array for particle fission sites
   Tally *mytally, *global_tally; // scalar flux tallies
   double *keff, *mykeff; // effective multiplication factor
-  double t1, t2; // timers--may need changing
+  double t1, t2; // timers
 
   // Establish MPI values
   MPI_Comm_size(MPI_COMM_WORLD, &prcsize);
@@ -97,8 +97,9 @@ int main(int argc, char *argv[])
   }
   
   // Start time
-  t1 = timer();
-  ////Likely needs modification
+  if(MPI_WTIME_IS_GLOBAL) t1 = MPI_Wtime(); /// utilize the wall clock if it's implemented
+  ///note: test at some point to see if it is implemented/functional, and if so potentially remove the else
+  else {MPI_Barrier(cube); t1 = timer();}
   
   run_eigenvalue(cube, myrank, myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);
 
@@ -107,9 +108,10 @@ int main(int argc, char *argv[])
     
   
   // Stop time
-  t2 = timer();
+  if(MPI_WTIME_IS_GLOBAL) {t2 = MPI_Wtime();}
+  else {MPI_Barrier(cube); t2 = timer();}
 
-  printf("Simulation time: %f secs\n", t2-t1);
+  if(myrank==0) printf("Simulation time: %f secs\n", t2-t1);
 
   // Free memory
   free(keff); free(mykeff);
