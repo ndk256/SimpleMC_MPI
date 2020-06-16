@@ -1,7 +1,6 @@
 #include "header.h"
 
-void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff)
-{
+void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff){
   int i_b; // index over batches
   int i_a = -1; // index over active batches
   int i_g; // index over generations
@@ -30,8 +29,13 @@ void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbound
       // Set RNG stream for tracking
       set_stream(STREAM_TRACK);
 
-      //set up buffer array for cross-process transport
-        Particle sendbank[parameters->n_particles][6];
+      //set up buffer arrays for cross-process transport
+      Particle tox0[parameters->n_particles]; ///there's probably a better sizing to use; this is on the high end
+  Particle tox1[parameters->n_particles];
+  Particle toy0[parameters->n_particles];
+  Particle toy1[parameters->n_particles];
+  Particle toz0[parameters->n_particles];
+  Particle toz1[parameters->n_particles];
         int send_indices[6] = { }; //initializes empty array
 	    
       // Loop over particles
@@ -102,7 +106,7 @@ void run_eigenvalue(MPI_Comm comm, int myrank, int myneighb[], double localbound
   return;
 }
 		  
-void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6], int myneighb[6], double mybounds[6], MPI_Comm comm)
+void sendrecv_particles(Bank *bank, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[6], int myneighb[6], double mybounds[6], MPI_Comm comm)
  {
  /// To do: re-allocate bank->p memory? check if necessary
  
@@ -134,16 +138,16 @@ void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6],
   if(bank->p[i].y < mybounds[3] && bank->p[i].y >= mybounds[2] && bank->p[i].z < mybounds[5] && bank->p[i].z >= mybounds[4])
     {bank->p[i].alive = TRUE;} ///if it's in the right place it can be deemed alive again
   else if(bank->p[i].y < mybounds[2]) {
-    sendbank[send_indices[2]][2] = bank->p[i]; 
+    toy0[send_indices[2]] = bank->p[i]; 
     send_indices[2]++;}
   else if(bank->p[i].y >= mybounds[3]) {
-    sendbank[send_indices[3]][3] = bank->p[i];
+    toy1[send_indices[3]] = bank->p[i];
     send_indices[3]++;}
   else if(bank->p[i].z < mybounds[4]) {
-    sendbank[send_indices[4]][4] = bank->p[i]; 
+    toz0[send_indices[4]] = bank->p[i]; 
     send_indices[4]++;}
   else if(bank->p[i].z >= mybounds[5]) {
-    sendbank[send_indices[5]][5] = bank->p[i]; 
+    toz1[send_indices[5]] = bank->p[i]; 
     send_indices[5]++;}
  }
  
@@ -153,8 +157,8 @@ void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6],
  int b_ind = recv_count;
 	 
  // sending along y direction
- ///MPI_Isend(sendbank[][2], send_indices[2]+1, PARTICLE, myneighb[2], 2, comm,&reqs[2]);
- ////MPI_Isend(sendbank[][3], send_indices[3]+1, PARTICLE, myneighb[3], 3, comm,&reqs[3]);
+ MPI_Isend(toy0, send_indices[2]+1, PARTICLE, myneighb[2], 2, comm,&reqs[2]);
+ MPI_Isend(toy1, send_indices[3]+1, PARTICLE, myneighb[3], 3, comm,&reqs[3]);
  
  send_indices[2]=0; send_indices[3]=0; //resetting
  
@@ -176,10 +180,10 @@ void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6],
    {if(bank->p[i].z < mybounds[5] && bank->p[i].z >= mybounds[4])
       {bank->p[i].alive = TRUE;} ///if it's in the right place it can be deemed alive again
     else if(bank->p[i].z < mybounds[4]) 
-      {sendbank[send_indices[4]][4] = bank->p[i];
+      {toz0[send_indices[4]] = bank->p[i];
        send_indices[4]++;}
     else if(bank->p[i].z >= mybounds[5]) {
-       sendbank[send_indices[5]][5] = bank->p[i]; 
+       toz1[send_indices[5]] = bank->p[i]; 
        send_indices[5]++;}
    }
   
@@ -187,8 +191,8 @@ void sendrecv_particles(Bank *bank, Particle sendbank[][6], int send_indices[6],
  MPI_Wait(&reqs[3], MPI_STATUS_IGNORE);
 
  // send along z direction
- ////MPI_Isend(sendsegz, send_indices[4], PARTICLE, myneighb[4], 4, comm,&reqs[4]    );
- ////MPI_Isend(sendsegzz, send_indices[5], PARTICLE, myneighb[5], 5, comm,&reqs[5    ]);
+MPI_Isend(toz0, send_indices[4], PARTICLE, myneighb[4], 4, comm,&reqs[4]    );
+ MPI_Isend(toz1, send_indices[5], PARTICLE, myneighb[5], 5, comm,&reqs[5    ]);
  
  send_indices[4]=0; send_indices[5]=0;
  
