@@ -162,7 +162,7 @@ void free_tally(Tally *tally);
  void distribute_sb(int mycoords[3], int prcoords[3], int myrank, MPI_Comm comm, Bank *sb, Bank *mysb);
 
 // transport.c function prototypes
-void transport(Parameters *parameters, Geometry *geometry, double local_bounds[6], Material *material, Particle send_bank[][6], int send_indices[6], Bank *fission_bank, Tally *tally, Particle *p);
+void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[], Bank *fission_bank, Tally *tally, Particle *p);
 double distance_to_boundary(Geometry *geometry, Particle *p);
 double distance_to_collision(Material *material);
 double dist_to_edge(Particle *p, double s_coords[6]);
