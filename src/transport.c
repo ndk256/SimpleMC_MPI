@@ -1,7 +1,7 @@
 #include "header.h"
 
 // Main logic to move particle
-void transport(Parameters *parameters, Geometry *geometry, double local_bounds[6], Material *material, Particle send_bank[][6], int send_indices, Bank *fission_bank, Tally *tally, Particle *p)
+void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[], Bank *fission_bank, Tally *tally, Particle *p)
 {
   double d_b;
   double d_c;
