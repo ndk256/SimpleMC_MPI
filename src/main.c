@@ -11,22 +11,22 @@ int main(int argc, char *argv[])
   double *keff, *mykeff; // effective multiplication factor
   double t1, t2; // timers--may need changing
 
-  // Get inputs: set parameters to default values, parse parameter file,
-  // override with any command line inputs, and print parameters
-  parameters = init_parameters();
-  parse_parameters(parameters);
-  read_CLI(argc, argv, parameters);
-  print_parameters(parameters);  ///may need to be only on rank==0
-  local_par = localize_parameters(parameters, prcperdim);
-
-  MPI_Init(&argc, &argv);
-  int prcsize, myrank, prcperdim[3], periodicity[3]={0,0,0};
-
   // Establish MPI values
   MPI_Comm_size(MPI_COMM_WORLD, &prcsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm cube; //really ought to have a better name
   MPI_Dims_create(prcsize, 3, prcperdim);
+  
+  // Get inputs: set parameters to default values, parse parameter file,
+  // override with any command line inputs, and print parameters
+  parameters = init_parameters();
+  parse_parameters(parameters); ///Are there any issues with reading the same CLI on multiple processes?
+  read_CLI(argc, argv, parameters);
+  if(myrank==0) print_parameters(parameters);
+  local_par = localize_parameters(parameters, prcperdim);
+
+  MPI_Init(&argc, &argv);
+  int prcsize, myrank, prcperdim[3], periodicity[3]={0,0,0};
   
   // Define Particle in MPI-sendable format
   MPI_Datatype PARTICLE;
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
   MPI_Type_commit(&PARTICLE);
   
   // Set initial RNG seed
-  set_initial_seed(parameters->seed); //may need changing (only do on rank==0?)
+  set_initial_seed(parameters->seed);
   set_stream(STREAM_INIT);
 
   // Create files for writing results to
