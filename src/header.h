@@ -167,7 +167,7 @@ double distance_to_boundary(Geometry *geometry, Particle *p);
 double distance_to_collision(Material *material);
 double dist_to_edge(Particle *p, double s_coords[6]);
 void cross_surface(Geometry *geometry, Particle *p);
-void cross_process(double localbounds[6], Particle *p, Particle sendbank[][6], int indices[6]);
+void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int indices[]);
 void collision(Material *material, Bank *fission_bank, double nu, Particle *p);
 
 // eigenvalue.c function prototypes
