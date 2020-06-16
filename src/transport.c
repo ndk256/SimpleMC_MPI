@@ -35,7 +35,7 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
     
     else if((d_e < d_c && d_e < d_b)
     {
-    cross_process(local_bounds, p, send_bank, send_indices);
+    cross_process(local_bounds, p, tox0, tox1, toy0, toy1, toz0, toz1, send_indices);
     }
     
     // Case where particle has collision
@@ -249,16 +249,16 @@ void collision(Material *material, Bank *fission_bank, double nu, Particle *p)
             
 ///handles particle crossing into another process's subdomain
 ///rather, simply sends it to a buffer which will be passed out to the appropriate process later on
-    void cross_process(double localbounds[], Particle *p, Particle sendbank[][6], int indices[])
+    void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int indices[])
     {
-     if(p->x==localbounds[0]) {sendbank[0][indices[0]] = *p; indices[0]++;}
-     if(p->x==localbounds[1]) {sendbank[1][indices[1]] = *p; indices[1]++;}
-     if(p->y==localbounds[2]) {sendbank[2][indices[2]] = *p; indices[2]++;}
-     if(p->y==localbounds[3]) {sendbank[3][indices[3]] = *p; indices[3]++;}
-     if(p->z==localbounds[4]) {sendbank[4][indices[4]] = *p; indices[4]++;}
-     if(p->z==localbounds[5]) {sendbank[5][indices[5]] = *p; indices[5]++;}
+     if(p->x==localbounds[0]) {tox0[indices[0]] = *p; indices[0]++;}
+  if(p->x==localbounds[1]) {tox1[indices[1]] = *p; indices[1]++;}
+  if(p->y==localbounds[2]) {toy0[indices[2]] = *p; indices[2]++;}
+  if(p->y==localbounds[3]) {toy1[indices[3]] = *p; indices[3]++;}
+  if(p->z==localbounds[4]) {toz0[indices[4]] = *p; indices[4]++;}
+  if(p->z==localbounds[5]) {toz1[indices[5]] = *p; indices[5]++;}
     
-    p->alive=FALSE; ///this is merely temporary. it'll get better.
+    p->alive=FALSE; // particle eliminated on sender process
     
     return;
 }
