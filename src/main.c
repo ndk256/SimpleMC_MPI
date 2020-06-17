@@ -74,7 +74,8 @@ int main(int argc, char *argv[])
   my_tally = init_tally(local_par);
 
   // Create source bank and initial source distribution
-  my_sourcebank = init_source_bank(parameters, geometry); ///unsure of arguments
+  my_sourcebank = init_bank(parameters->n_particles);
+  
   if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
   {source_bank = init_source_bank(parameters, geometry);
   distribute_sb(mycoords, prcperdim, myrank, spatialgrid, source_bank, my_sourcebank);
