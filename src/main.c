@@ -73,23 +73,22 @@ int main(int argc, char *argv[])
   global_tally = init_tally(parameters);
   my_tally = init_tally(local_par);
 
-  // Create source bank and initial source distribution
   my_sourcebank = init_bank(parameters->n_particles);
   
   if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
+      // Create source bank and initial source distribution
   {source_bank = init_source_bank(parameters, geometry);
   distribute_sb(mycoords, prcperdim, myrank, spatialgrid, source_bank, my_sourcebank);
+  free_bank(source_bank); ///is this appropriate placement?
   }
   else distribute_sb(mycoords, prcperdim, myrank, spatialgrid, my_sourcebank, my_sourcebank);
-  
-  ///free source_bank right now??
   
   // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
 
   // Set up array for k effective
   keff = calloc(parameters->n_active, sizeof(double));
-  mykeff = calloc(local_par->n_active,sizeof(double)); ///unsure if correct
+  mykeff = calloc(local_par->n_active, sizeof(double)); ///unsure if correct
   
   if(myrank==0){
   center_print("SIMULATION", 79);
@@ -118,7 +117,7 @@ int main(int argc, char *argv[])
   free(keff); free(mykeff);
   free_tally(global_tally); free(mytally);
   free_bank(fission_bank);
-  if(myrank==0) free_bank(source_bank); ///may change
+  free_bank(my_sourcebank); 
   free_material(material);
   free(geometry);
   free(parameters); free(local_par);
