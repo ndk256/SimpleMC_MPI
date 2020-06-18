@@ -114,10 +114,8 @@ void sendrecv_particles(Bank *bank, Particle tox0[], Particle tox1[], Particle t
  MPI_Request reqs[6];
  
  // sending particles along x direction
-	 
-	 //commented-out lines aren't working yet
-//MPI_Isend(sendbank[][0], send_indices[0]+1, PARTICLE, myneighb[0], 0, comm,&reqs[    0]);
-//MPI_Isend(sendsegxx, send_indices[1]+1, PARTICLE, myneighb[1], 1, comm, &req    s[1]);
+MPI_Isend(tox0, send_indices[0]+1, PARTICLE, myneighb[0], 0, comm,&reqs[0]);
+MPI_Isend(tox1, send_indices[1]+1, PARTICLE, myneighb[1], 1, comm, &reqs[1]);
  
  send_indices[0]=0; send_indices[1]=0; //resetting
  
