@@ -16,25 +16,34 @@ Parameters *localize_parameters(Parameters *par,int dims[])
 void distrib_particle(int prcoords[], int dim, MPI_Comm comm, Bank *sb, int myrank)
 {
 int d = prcoords[dim]; //number of processes on the given axis
-Particle sendbank[sb->n][d];
-int banksz[d];
-
-for(int i_p=0; i_p<sb->n; i_p++)
-{
-double pcoords[3] = {sb->p[i_p].x, sb->p[i_p].y, sb->p[i_p].z};
-int i= pcoords[dim]/d; //due to integer division, this should give the coordinates to send to
-sendbank[banksz[i]][i] = sb->p[i_p];
-banksz[i]++;}
-
+int banksz = 0;
+Particle *send; send = (Particle*) malloc((sb->n)*sizeof(Particle)); /// attempting to be dynamic
 int destrank;
-
-for(int j=0; j<prcoords[dim]; j++)
+   
+for(int i=1; i<d; i++) // move through the processes in the given dimension from nearest to farthest
 {
-MPI_Cart_shift(comm, dim, j, &myrank, &destrank);
+   for(int i_p=0; i_p<sb->n; i_p++) // iterate through each particle to find if they belong on that process
+   {
+      /// this could be made more efficient; currently it will do a lot of double-checking
+      double pcoords[3] = {sb->p[i_p].x, sb->p[i_p].y, sb->p[i_p].z}; // make p's coordinates into a generic/numeric reference
+      /// modify ^ if repeated redeclarations isn't good
+      if(pcoords[dim]/d == i)
+      {
+         send[banksz[i]] = sb->p[i_p];
+         banksz++;
+         sb->p[i_p]->alive = 0; ///double-check if correct, but basically kill the version that's not on the right processes
+       //experimental alternative:
+         /*
+         sb->p[i_p] = sb->p[sb->n];
+         sb->n--;
+         */
+      }
+   }
+   MPI_Cart_shift(comm, dim, i, &myrank, &destrank);
+   MPI_Isend(send, banksz, PARTICLE, destrank, dim, comm, MPI_REQUEST_NULL); /// unsure about the last argument
+   banksz=0;
+}   
 
-//MPI_Isend(sendbank[][j], banksz[j], PARTICLE, destrank, dim, comm, MPI_REQUEST_NULL);
-//the above line is not correct yet
-}
 return;
 }
 
