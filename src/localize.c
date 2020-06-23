@@ -29,9 +29,9 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
       /// modify ^ if repeated redeclarations isn't good
       if(pcoords[dim]/d == i)
       {
-         send[banksz[i]] = sb->p[i_p];
+         send[banksz] = sb->p[i_p];
          banksz++;
-         sb->p[i_p]->alive = 0; ///double-check if correct, but basically kill the version that's not on the right processes
+         sb->p[i_p]->alive = FALSE; ///double-check if correct, but basically kill the version that's not on the right processes
        //experimental alternative:
          /*
          sb->p[i_p] = sb->p[sb->n];
