@@ -9,6 +9,7 @@
 #include<float.h>
 #include<unistd.h>
 #include<string.h>
+#include<mpi.h>
 
 #define TRUE 1
 #define FALSE 0
