@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
   double *keff, *mykeff; // effective multiplication factor
   double t1, t2; // timers
 
+    MPI_Init(&argc, &argv);
   // Establish MPI values
     int prcsize, myrank, prcperdim[3], periodicity[3]={0,0,0};
   MPI_Comm_size(MPI_COMM_WORLD, &prcsize);
@@ -25,8 +26,6 @@ int main(int argc, char *argv[])
   read_CLI(argc, argv, parameters);
   if(myrank==0) print_parameters(parameters);
   local_par = localize_parameters(parameters, prcperdim);
-
-  MPI_Init(&argc, &argv);
   
   // Define Particle in MPI-sendable format
   MPI_Datatype PARTICLE;
