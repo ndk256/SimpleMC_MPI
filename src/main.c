@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
   double t1, t2; // timers
 
   // Establish MPI values
+    int prcsize, myrank, prcperdim[3], periodicity[3]={0,0,0};
   MPI_Comm_size(MPI_COMM_WORLD, &prcsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm cube; //really ought to have a better name
@@ -26,7 +27,6 @@ int main(int argc, char *argv[])
   local_par = localize_parameters(parameters, prcperdim);
 
   MPI_Init(&argc, &argv);
-  int prcsize, myrank, prcperdim[3], periodicity[3]={0,0,0};
   
   // Define Particle in MPI-sendable format
   MPI_Datatype PARTICLE;
