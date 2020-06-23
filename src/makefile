@@ -39,7 +39,7 @@ ifeq ($(OPTIMIZE),yes)
 endif
 
 ifeq ($(COMPILER),gnu)
-  CC = gcc
+  CC = mpicc
 endif
 
 # Targets to build
