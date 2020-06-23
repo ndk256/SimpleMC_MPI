@@ -1,6 +1,6 @@
 # User options
 
-COMPILER = mpicc
+COMPILER = gnu
 OPTIMIZE = yes
 DEBUG    = no
 
@@ -38,7 +38,7 @@ ifeq ($(OPTIMIZE),yes)
   CFLAGS += -O3
 endif
 
-ifeq ($(COMPILER),mpicc)
+ifeq ($(COMPILER),gnu)
   CC = mpicc
 endif
 
