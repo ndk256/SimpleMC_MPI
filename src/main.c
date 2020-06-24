@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 
     MPI_Init(&argc, &argv);
   // Establish MPI values
-    int prcsize, myrank, prcperdim[3], periodicity[3]={0,0,0};
+    int prcsize, myrank, prcperdim[3], periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
   MPI_Comm_size(MPI_COMM_WORLD, &prcsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm cube; //really ought to have a better name
@@ -36,10 +36,10 @@ int main(int argc, char *argv[])
 
   // Set up geometry
   geometry = init_geometry(parameters);
-  if(geometry->bc==PERIODIC){
+ /* if(geometry->bc==PERIODIC){
     periodicity[0]=1;
     periodicity[1]=1;
-    periodicity[2]=1;}
+    periodicity[2]=1;}*/
  
   // Create 3D topography and orient self
   MPI_Cart_create(MPI_COMM_WORLD, 3, prcperdim, periodicity, 1, &cube);
