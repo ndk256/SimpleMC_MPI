@@ -145,6 +145,16 @@ void parse_parameters(Parameters *parameters)
       parameters->keff_file = malloc(strlen(s)*sizeof(char)+1);
       strcpy(parameters->keff_file, s);
     }
+    
+    else if(strcmp(s, "n_prc_auto")==0){
+       s = strtok(NULL, "=\n");
+        if(strcasecmp(s, "true") == 0)
+          parameters->n_prc_auto = TRUE;
+        else if(strcasecmp(s, "false") == 0)
+          parameters->n_prc_auto = FALSE;
+        else
+       print_error("Invalid option for parameter 'n_prc_auto': must be 'true'     or 'false'");
+      }
 
     else if(strcmp(s, "n_prc_x") == 0){
        parameters->n_prc_x = atoi(strtok(NULL, "=\n"));
@@ -274,6 +284,18 @@ void read_CLI(int argc, char *argv[], Parameters *parameters)
       if(++i < argc) parameters->xs_f = atof(argv[i]);
       else print_error("Error reading command line input '-xs_f'");
     }
+    
+    else if(strcmp(arg, "-np_auto") == 0){
+      if(++i < argc){
+        if(strcasecmp(argv[i], "true") == 0)
+          parameters->n_prc_auto = TRUE;
+        else if(strcasecmp(argv[i], "false") == 0)
+          parameters->n_prc_auto = FALSE;
+        else
+          print_error("Invalid option for parameter 'np_auto/n_prc_auto': must be 'true' or 'false'");
+      }
+      else print_error("Error reading command line input '-np_auto'");
+    }
 
         ///Number of processes in each dimension: -npx -npy -npz
     ///Is there any way to combine these? Though, given how geometry is laid out, I'd guess not.
@@ -379,8 +401,9 @@ void read_CLI(int argc, char *argv[], Parameters *parameters)
     print_error("Length of domain must be positive in x, y, and z dimension");
   if(parameters->xs_f < 0 || parameters->xs_a < 0 || parameters->xs_s < 0)
     print_error("Macroscopic cross section values cannot be negative");
-  if(parameters->n_prc_x < 0 || parameters->n_prc_y<0 || parameters->n_prc_z<0) 
-    print_error("Number of processes per dimension cannot be negative");
+  if(parameters->n_prc_auto==FALSE){
+  if(parameters->n_prc_x <= 0 || parameters->n_prc_y<=0 || parameters->n_prc_z<=0) 
+    print_error("Number of processes per dimension cannot be negative or zero");}
   return;
 }
 
