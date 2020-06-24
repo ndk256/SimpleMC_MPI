@@ -61,6 +61,9 @@ tally_file=tally.dat
 
 # keff_file: path to keff output
 keff_file=keff.dat
+
+#n_prc_auto: whether to decompose domain automatically or using inputs
+n_prc_auto=false
  
 # n_prc_x: number of processes in x dimension
 n_prc_x=1
