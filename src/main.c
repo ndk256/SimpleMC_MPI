@@ -17,7 +17,6 @@ int main(int argc, char *argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &prcsize);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm cube; //really ought to have a better name
-  MPI_Dims_create(prcsize, 3, prcperdim);
   
   // Get inputs: set parameters to default values, parse parameter file,
   // override with any command line inputs, and print parameters
@@ -25,6 +24,15 @@ int main(int argc, char *argv[])
   parse_parameters(parameters); ///Are there any issues with reading the same CLI on multiple processes?
   read_CLI(argc, argv, parameters);
   if(myrank==0) print_parameters(parameters);
+  
+  if(parameters->n_prc_auto == TRUE)
+  MPI_Dims_create(prcsize, 3, prcperdim); ///
+  else{
+  prcperdim[0]=parameters->n_prc_x; 
+  prcperdim[1]=parameters->n_prc_y;
+  prcperdim[2]=parameters->n_prc_z;
+  }
+  
   local_par = localize_parameters(parameters, prcperdim);
   
   // Set initial RNG seed
