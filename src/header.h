@@ -66,6 +66,7 @@ typedef struct Parameters_{
   char *keff_file; // path to write keff to
   MPI_Datatype type;
   int n_prc_x, n_prc_y, n_prc_z;
+  bool n_prc_auto;
 } Parameters;
 
 typedef struct Particle_{
