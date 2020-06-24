@@ -27,16 +27,6 @@ int main(int argc, char *argv[])
   if(myrank==0) print_parameters(parameters);
   local_par = localize_parameters(parameters, prcperdim);
   
-  // Define Particle in MPI-sendable format
-  MPI_Datatype PARTICLE;
-  MPI_Datatype base[2] = {MPI_INT, MPI_DOUBLE};
-  int blocks[2] = {2,8};
-  MPI_Aint offsets[2], extent;
-  MPI_Type_extent(MPI_INT, &extent);
-  offsets[0] =0; offsets[1]=blocks[0]*extent;
-  MPI_Type_struct(2, blocks, offsets, base, &PARTICLE);
-  MPI_Type_commit(&PARTICLE);
-  
   // Set initial RNG seed
   set_initial_seed(parameters->seed);
   set_stream(STREAM_INIT);
@@ -77,10 +67,10 @@ int main(int argc, char *argv[])
   if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
       // Create source bank and initial source distribution
   {source_bank = init_source_bank(parameters, geometry);
-  distribute_sb(mycoords, prcperdim, myrank, spatialgrid, source_bank, my_sourcebank);
+  distribute_sb(mycoords, parameters, prcperdim, myrank, spatialgrid, source_bank, my_sourcebank);
   free_bank(source_bank); ///is this appropriate placement?
   }
-  else distribute_sb(mycoords, prcperdim, myrank, spatialgrid, my_sourcebank, my_sourcebank);
+  else distribute_sb(mycoords, parameters, prcperdim, myrank, spatialgrid, my_sourcebank, my_sourcebank);
   
   // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
@@ -100,16 +90,15 @@ int main(int argc, char *argv[])
   ///note: test at some point to see if it is implemented/functional, and if so potentially remove the else
   else {MPI_Barrier(cube); t1 = timer();}
   
-  run_eigenvalue(cube, myrank, myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);
-
-  ///aggregate the tally///
-    MPI_Reduce(mytally->flux, global_tally->flux, parameters->n_particles, MPI_DOUBLE, MPI_SUM, 0, cube);
-    
+  run_eigenvalue(cube, myrank, myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
   
   // Stop time
   if(MPI_WTIME_IS_GLOBAL) {t2 = MPI_Wtime();}
   else {MPI_Barrier(cube); t2 = timer();}
 
+   ///aggregate the tally///
+    MPI_Reduce(mytally->flux, global_tally->flux, parameters->n_particles, MPI_DOUBLE, MPI_SUM, 0, cube);
+  
   if(myrank==0) printf("Simulation time: %f secs\n", t2-t1);
 
   // Free memory
@@ -121,7 +110,6 @@ int main(int argc, char *argv[])
   free(geometry);
   free(parameters); free(local_par);
   
-  MPI_Type_free(&PARTICLE);
   MPI_Comm_free(&cube);
   MPI_Finalize();
 
