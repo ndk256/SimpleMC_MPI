@@ -19,8 +19,8 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
     d_c = distance_to_collision(material);
 
     // Take smallest of the distances
-    if(d_e < d_b && d_e < d_c) d = d_e;
-    else if (d_b < d_e && d_b < d_c) d = d_b;
+    if(d_b <= d_e && d_b <= d_c) d = d_b;
+    else if (d_e <= d_b && d_e <= d_c) d = d_e;
     else d=d_c;
 
     // Advance particle
@@ -29,11 +29,11 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
     p->z = p->z + d*p->w;
 
     // Case where particle crosses boundary
-    if(d_b < d_c&& d_b< d_e){
+    if(d_b <= d_c && d_b<= d_e){
       cross_surface(geometry, p);
     }
     
-    else if((d_e < d_c && d_e < d_b)
+    else if((d_e <= d_c && d_e <= d_b)
     {
     cross_process(local_bounds, p, tox0, tox1, toy0, toy1, toz0, toz1, send_indices);
     }
