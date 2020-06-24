@@ -275,6 +275,21 @@ void read_CLI(int argc, char *argv[], Parameters *parameters)
       else print_error("Error reading command line input '-xs_f'");
     }
 
+        ///Number of processes in each dimension: -npx -npy -npz
+    ///Is there any way to combine these? Though, given how geometry is laid out, I'd guess not.
+    else if(strcmp(arg, "-npx") == 0){
+        if(++i < argc) parameters->n_prc_x = atoi(argv[i]);
+        else print_error("Error reading command line input '-npx'");
+      }
+    else if(strcmp(arg, "-npy") == 0){
+        if(++i < argc) parameters->n_prc_y = atoi(argv[i]);
+        else print_error("Error reading command line input '-npy'");
+      }
+     else if(strcmp(arg, "-npz") == 0){
+        if(++i < argc) parameters->n_prc_z = atoi(argv[i]);
+        else print_error("Error reading command line input '-npz'");
+      }
+    
     // Geometry size in x (-x)
     else if(strcmp(arg, "-x") == 0){
       if(++i < argc) parameters->gx = atof(argv[i]);
@@ -364,7 +379,8 @@ void read_CLI(int argc, char *argv[], Parameters *parameters)
     print_error("Length of domain must be positive in x, y, and z dimension");
   if(parameters->xs_f < 0 || parameters->xs_a < 0 || parameters->xs_s < 0)
     print_error("Macroscopic cross section values cannot be negative");
-
+  if(parameters->n_prc_x < 0 || parameters->n_prc_y<0 || parameters->n_prc_z<0) 
+    print_error("Number of processes per dimension cannot be negative");
   return;
 }
 
