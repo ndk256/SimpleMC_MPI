@@ -77,7 +77,7 @@ distrib_particle(prcoords, p, 1, comm, mysb, myrank);
 MPI_Barrier(comm);
 
 //for the processes handling (x,y,0)
-if(mycoords[2]==0){
+if(mycoords[2]==0 && mycoords[0]!=0) {
 MPI_Probe(MPI_ANY_SOURCE, 1, comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
 MPI_Recv(mysb->p+index, msg_size, p->type, MPI_ANY_SOURCE, 1, comm, &status);
