@@ -34,6 +34,7 @@ Parameters *init_parameters(void)
       MPI_Type_commit(&PARTICLE);
   
   p->type=PARTICLE;
+  p->n_prc_auto = TRUE;
   
   return p;
 }
