@@ -57,7 +57,8 @@ MPI_Barrier(comm);
 //for the process representing (0,0,0)
 if(mycoords[0]==0 && mycoords[1]==0 && mycoords[2] == 0)
 {
-distrib_particle(prcoords, p, 0, comm, sb, myrank);
+   mysb = sb;
+distrib_particle(prcoords, p, 0, comm, mysb, myrank);
 }
 
 MPI_Barrier(comm);
