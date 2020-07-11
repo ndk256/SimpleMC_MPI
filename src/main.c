@@ -105,11 +105,6 @@ int main(int argc, char *argv[])
   // Stop time
   if(MPI_WTIME_IS_GLOBAL) {t2 = MPI_Wtime();}
   else {MPI_Barrier(cube); t2 = timer();}
-
-   ///aggregate the tally///
-    MPI_Reduce(mytally->flux, global_tally->flux, parameters->n_particles, MPI_DOUBLE, MPI_SUM, 0, cube);
-  ///and write it
-  
   
   if(myrank==0) printf("Simulation time: %f secs\n", t2-t1);
 
