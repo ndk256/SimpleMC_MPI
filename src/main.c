@@ -15,7 +15,6 @@ int main(int argc, char *argv[])
   // Establish MPI values
     int prcsize, myrank, prcperdim[3], periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
   MPI_Comm_size(MPI_COMM_WORLD, &prcsize); ///NOTE: moving these later and using 'cube' still didn't work
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm cube; //really ought to have a better name
   
   // Get inputs: set parameters to default values, parse parameter file,
@@ -51,7 +50,7 @@ int main(int argc, char *argv[])
  
   // Create 3D topography and orient self
   MPI_Cart_create(MPI_COMM_WORLD, 3, prcperdim, periodicity, 1, &cube); ///NOTE: this line doesn't seem to actually create the communicator
-  int mycoords[3];
+  int mycoords[3];   MPI_Comm_rank(cube, &myrank);
   MPI_Cart_coords(cube, myrank, 3, mycoords);
   double mybounds[6] = {mycoords[0]*(geometry->x/prcperdim[0]), (mycoords[0]+1)*(geometry->x/prcperdim[0]), mycoords[1]*(geometry->y/prcperdim[1]), (mycoords[1]+1)*(geometry->y/prcperdim[1]),mycoords[2]*(geometry->z/prcperdim[2]), (mycoords[2]+1)*geometry->z/prcperdim[2]};
 // ^sorry that's a long line^
