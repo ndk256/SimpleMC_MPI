@@ -153,7 +153,7 @@ void parse_parameters(Parameters *parameters)
         else if(strcasecmp(s, "false") == 0)
           parameters->n_prc_auto = FALSE;
         else
-       print_error("Invalid option for parameter 'n_prc_auto': must be 'true'     or 'false'");
+       print_error("Invalid option for parameter 'n_prc_auto': must be 'true' or 'false'");
       }
 
     else if(strcmp(s, "n_prc_x") == 0){
