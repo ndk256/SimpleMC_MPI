@@ -53,7 +53,7 @@ void distribute_sb(int mycoords[], Parameters *p, int prcoords[], int myrank, Ba
 MPI_Status status;
 int msg_size, index=0;
 
-MPI_Barrier(parameters->comm);
+MPI_Barrier(p->comm);
 
 //for the process representing (0,0,0)
 if(mycoords[0]==0 && mycoords[1]==0 && mycoords[2] == 0)
@@ -62,38 +62,38 @@ if(mycoords[0]==0 && mycoords[1]==0 && mycoords[2] == 0)
 distrib_particle(prcoords, p, 0, mysb, myrank);
 }
 
-MPI_Barrier(parameters->comm);
+MPI_Barrier(p->comm);
 
 //for the processes handling (x,0,0)
 if(mycoords[1]==0 && mycoords[2]==0){
 if(mycoords[0]!=0)
 {MPI_Probe(MPI_ANY_SOURCE, 0, parameters->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
-MPI_Recv(mysb->p, msg_size, p->type, MPI_ANY_SOURCE, 0, parameters->comm, MPI_STATUS_IGNORE);
+MPI_Recv(mysb->p, msg_size, p->type, MPI_ANY_SOURCE, 0, p->comm, MPI_STATUS_IGNORE);
 index+=msg_size;
 (*mysb)->n += msg_size;}
 
-distrib_particle(prcoords, p, 1, parameters->comm, mysb, myrank);
+distrib_particle(prcoords, p, 1, mysb, myrank);
 }
 
-MPI_Barrier(parameters->comm);
+MPI_Barrier(p->comm);
 
 //for the processes handling (x,y,0)
 if(mycoords[2]==0 && mycoords[0]!=0) {
-MPI_Probe(MPI_ANY_SOURCE, 1, parameters->comm, &status);
+MPI_Probe(MPI_ANY_SOURCE, 1, p->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
-MPI_Recv(mysb->p+index, msg_size, p->type, MPI_ANY_SOURCE, 1, parameters->comm, &status);
-distrib_particle(prcoords, p, 2, parameters->comm, mysb, myrank);
+MPI_Recv(mysb->p+index, msg_size, p->type, MPI_ANY_SOURCE, 1, p->comm, &status);
+distrib_particle(prcoords, p, 2, mysb, myrank);
 index+=msg_size;
    (*mysb)->n += msg_size;
 }
 
-MPI_Barrier(parameters->comm);
+MPI_Barrier(p->comm);
 
 if(mycoords[2]!=0)
-{MPI_Probe(MPI_ANY_SOURCE, 2, parameters->comm, &status);
+{MPI_Probe(MPI_ANY_SOURCE, 2, p->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
-MPI_Recv((*mysb)->p+index, msg_size, p->type, status.MPI_SOURCE, 2, parameters->comm, &status);
+MPI_Recv((*mysb)->p+index, msg_size, p->type, status.MPI_SOURCE, 2, p->comm, &status);
 (*mysb)->n += msg_size;}
 
 (*mysb)->p = realloc((*mysb)->p, sizeof(Particle)*index); //no idea if this is right
