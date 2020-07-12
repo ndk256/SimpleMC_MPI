@@ -39,9 +39,9 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
          */
       }
    }
-   MPI_Cart_shift(parameters->comm, dim, i, &(parameters->local_rank), &destrank);
+   MPI_Cart_shift(p->comm, dim, i, &(p->local_rank), &destrank);
     MPI_Request mpir = MPI_REQUEST_NULL;
-   MPI_Isend(send, banksz, p->type, destrank, dim, parameters->comm, &mpir); /// unsure about the last argument
+   MPI_Isend(send, banksz, p->type, destrank, dim, p->comm, &mpir); /// unsure about the last argument
    banksz=0;
 }   
 
