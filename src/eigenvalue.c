@@ -119,21 +119,21 @@ void sendrecv_particles(Parameters *p, Bank *bank, Particle tox0[], Particle tox
  MPI_Request reqs[6];
  
  // sending particles along x direction
-MPI_Isend(tox0, send_indices[0]+1, p->type, myneighb[0], 0, parameters->comm, &reqs[0]);
-MPI_Isend(tox1, send_indices[1]+1, p->type, myneighb[1], 1, parameters->comm, &reqs[1]);
+MPI_Isend(tox0, send_indices[0]+1, p->type, myneighb[0], 0, p->comm, &reqs[0]);
+MPI_Isend(tox1, send_indices[1]+1, p->type, myneighb[1], 1, p->comm, &reqs[1]);
  
  send_indices[0]=0; send_indices[1]=0; //resetting
  
  // get any particles that have crossed in from other processes via x
- MPI_Probe(myneighb[0], 1, parameters->comm, &status); ///this is blocking--is that desired?
+ MPI_Probe(myneighb[0], 1, p->comm, &status); ///this is blocking--is that desired?
  MPI_Get_count(&status, p->type, &n_to_recv);
  
- MPI_Recv(bank->p, n_to_recv, p->type, myneighb[0], 1, parameters->comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p, n_to_recv, p->type, myneighb[0], 1, p->comm, MPI_STATUS_IGNORE);
  recv_count+=n_to_recv;
  
- MPI_Probe(myneighb[1], 0, parameters->comm, &status);
+ MPI_Probe(myneighb[1], 0, p->comm, &status);
  MPI_Get_count(&status, p->type, &n_to_recv);
- MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[1], 0, parameters->comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[1], 0, p->comm, MPI_STATUS_IGNORE);
  recv_count+=n_to_recv;
 	 	 
  // sorting through the received particles to see which have/n't reached their final destination
@@ -160,22 +160,22 @@ MPI_Isend(tox1, send_indices[1]+1, p->type, myneighb[1], 1, parameters->comm, &r
  int b_ind = recv_count;
 	 
  // sending along y direction
- MPI_Isend(toy0, send_indices[2]+1, p->type, myneighb[2], 2, parameters->comm, &reqs[2]);
- MPI_Isend(toy1, send_indices[3]+1, p->type, myneighb[3], 3, parameters->comm, &reqs[3]);
+ MPI_Isend(toy0, send_indices[2]+1, p->type, myneighb[2], 2, p->comm, &reqs[2]);
+ MPI_Isend(toy1, send_indices[3]+1, p->type, myneighb[3], 3, p->comm, &reqs[3]);
  
  send_indices[2]=0; send_indices[3]=0; //resetting
  
  // receiving from y direction
- MPI_Probe(myneighb[2], 3, parameters->comm, &status);
+ MPI_Probe(myneighb[2], 3, p->comm, &status);
  MPI_Get_count(&status, p->type, &n_to_recv);
  
- MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[2], 3, parameters->comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[2], 3, p->comm, MPI_STATUS_IGNORE);
  recv_count+= n_to_recv;
  
- MPI_Probe(myneighb[3], 2, parameters->comm, &status);
+ MPI_Probe(myneighb[3], 2, p->comm, &status);
  MPI_Get_count(&status, p->type, &n_to_recv);
  
- MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[3], 2, parameters->comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[3], 2, p->comm, MPI_STATUS_IGNORE);
  recv_count+= n_to_recv;
  
  // sorting through newly received particles
@@ -194,22 +194,22 @@ MPI_Isend(tox1, send_indices[1]+1, p->type, myneighb[1], 1, parameters->comm, &r
  MPI_Wait(&reqs[3], MPI_STATUS_IGNORE);
 
  // send along z direction
-MPI_Isend(toz0, send_indices[4], PARTICLE, myneighb[4], 4, parameters->comm, &reqs[4]);
- MPI_Isend(toz1, send_indices[5], PARTICLE, myneighb[5], 5, parameters->comm, &reqs[5]);
+MPI_Isend(toz0, send_indices[4], PARTICLE, myneighb[4], 4, p->comm, &reqs[4]);
+ MPI_Isend(toz1, send_indices[5], PARTICLE, myneighb[5], 5, p->comm, &reqs[5]);
  
  send_indices[4]=0; send_indices[5]=0;
  
  // receive along z direction
- MPI_Probe(myneighb[4], 5, parameters->comm, &status);
+ MPI_Probe(myneighb[4], 5, p->comm, &status);
  MPI_Get_count(&status, p->type, &n_to_recv);
  
- MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[4], 5, parameters->comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[4], 5, p->comm, MPI_STATUS_IGNORE);
  recv_count+=n_to_recv;
  
- MPI_Probe(myneighb[5], 4, parameters->comm, &status);
+ MPI_Probe(myneighb[5], 4, p->comm, &status);
  MPI_Get_count(&status, p->type, &n_to_recv);
  
- MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[5], 4, parameters->comm, MPI_STATUS_IGNORE);
+ MPI_Recv(bank->p[recv_count], n_to_recv, p->type, myneighb[5], 4, p->comm, MPI_STATUS_IGNORE);
  recv_count+=n_to_recv;
  
  MPI_Wait(&reqs[4], MPI_STATUS_IGNORE);
