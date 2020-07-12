@@ -58,7 +58,7 @@ void run_eigenvalue(int myneighb[], double localbounds[6], Parameters *parameter
   
     ///transport those particles
     for(int i_p2 =0; i_p2<source_bank->n; i_p2++){ 
-     rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p2*parameters->local_rank); ///may need changing
+     rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p2*parameters->local_rank*parameters->local_rank); ///may need changing
      transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p2]));
 
     }
