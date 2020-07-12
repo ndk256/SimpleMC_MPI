@@ -13,7 +13,7 @@ Parameters *localize_parameters(Parameters *par,int dims[])
 }
 
 //Sends particles to processes along the axis indicated by dim
-void distrib_particle(int prcoords[], Parameters *p, int dim, MPI_Comm comm, Bank **sb, int myrank)
+void distrib_particle(int prcoords[], Parameters *p, int dim, Bank **sb, int myrank)
 {
 int d = prcoords[dim]; //number of processes on the given axis
 int banksz = 0;
@@ -39,61 +39,61 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
          */
       }
    }
-   MPI_Cart_shift(comm, dim, i, &myrank, &destrank);
+   MPI_Cart_shift(parameters->comm, dim, i, &myrank, &destrank);
     MPI_Request mpir = MPI_REQUEST_NULL;
-   MPI_Isend(send, banksz, p->type, destrank, dim, comm, &mpir); /// unsure about the last argument
+   MPI_Isend(send, banksz, p->type, destrank, dim, parameters->comm, &mpir); /// unsure about the last argument
    banksz=0;
 }   
 
 return;
 }
 
-void distribute_sb(int mycoords[], Parameters *p, int prcoords[], int myrank, MPI_Comm comm, Bank *sb, Bank **mysb)
+void distribute_sb(int mycoords[], Parameters *p, int prcoords[], int myrank, Bank *sb, Bank **mysb)
 {
 MPI_Status status;
 int msg_size, index=0;
 
-MPI_Barrier(comm);
+MPI_Barrier(parameters->comm);
 
 //for the process representing (0,0,0)
 if(mycoords[0]==0 && mycoords[1]==0 && mycoords[2] == 0)
 {
    (*mysb) = sb;
-distrib_particle(prcoords, p, 0, comm, mysb, myrank);
+distrib_particle(prcoords, p, 0, mysb, myrank);
 }
 
-MPI_Barrier(comm);
+MPI_Barrier(parameters->comm);
 
 //for the processes handling (x,0,0)
 if(mycoords[1]==0 && mycoords[2]==0){
 if(mycoords[0]!=0)
-{MPI_Probe(MPI_ANY_SOURCE, 0, comm, &status);
+{MPI_Probe(MPI_ANY_SOURCE, 0, parameters->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
-MPI_Recv(mysb->p, msg_size, p->type, MPI_ANY_SOURCE, 0, comm, MPI_STATUS_IGNORE);
+MPI_Recv(mysb->p, msg_size, p->type, MPI_ANY_SOURCE, 0, parameters->comm, MPI_STATUS_IGNORE);
 index+=msg_size;
 (*mysb)->n += msg_size;}
 
-distrib_particle(prcoords, p, 1, comm, mysb, myrank);
+distrib_particle(prcoords, p, 1, parameters->comm, mysb, myrank);
 }
 
-MPI_Barrier(comm);
+MPI_Barrier(parameters->comm);
 
 //for the processes handling (x,y,0)
 if(mycoords[2]==0 && mycoords[0]!=0) {
-MPI_Probe(MPI_ANY_SOURCE, 1, comm, &status);
+MPI_Probe(MPI_ANY_SOURCE, 1, parameters->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
-MPI_Recv(mysb->p+index, msg_size, p->type, MPI_ANY_SOURCE, 1, comm, &status);
-distrib_particle(prcoords, p, 2, comm, mysb, myrank);
+MPI_Recv(mysb->p+index, msg_size, p->type, MPI_ANY_SOURCE, 1, parameters->comm, &status);
+distrib_particle(prcoords, p, 2, parameters->comm, mysb, myrank);
 index+=msg_size;
    (*mysb)->n += msg_size;
 }
 
-MPI_Barrier(comm);
+MPI_Barrier(parameters->comm);
 
 if(mycoords[2]!=0)
-{MPI_Probe(MPI_ANY_SOURCE, 2, comm, &status);
+{MPI_Probe(MPI_ANY_SOURCE, 2, parameters->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
-MPI_Recv((*mysb)->p+index, msg_size, p->type, status.MPI_SOURCE, 2, comm, &status);
+MPI_Recv((*mysb)->p+index, msg_size, p->type, status.MPI_SOURCE, 2, parameters->comm, &status);
 (*mysb)->n += msg_size;}
 
 (*mysb)->p = realloc((*mysb)->p, sizeof(Particle)*index); //no idea if this is right
