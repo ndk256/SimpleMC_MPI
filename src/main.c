@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 
     MPI_Init(&argc, &argv);
   // Establish MPI values
-    int myrank, prcperdim[3], periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
+    int prcperdim[3], periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
   MPI_Comm_size(MPI_COMM_WORLD, &(parameters->n_prc)); ///NOTE: moving these later and using 'cube' still didn't work
   MPI_Comm cube; //really ought to have a better name
   
@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
   parameters = init_parameters();
   parse_parameters(parameters); ///Are there any issues with reading the same CLI on multiple processes?
   read_CLI(argc, argv, parameters);
-  if(myrank==0) print_parameters(parameters);
+  if(parameters->local_rank==0) print_parameters(parameters);
   
   if(parameters->n_prc_auto == TRUE)
   MPI_Dims_create(parameters->n_prc, 3, prcperdim); ///
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
   set_stream(STREAM_INIT);
 
   // Create files for writing results to
-  if(myrank==0) init_output(parameters);
+  if(parameters->local_rank==0) init_output(parameters);
 
   // Set up geometry
   geometry = init_geometry(parameters);
@@ -51,17 +51,17 @@ int main(int argc, char *argv[])
   // Create 3D topography and orient self
   MPI_Cart_create(MPI_COMM_WORLD, 3, prcperdim, periodicity, 1, &cube); ///NOTE: this line doesn't seem to actually create the communicator
   parameters->comm = cube;
-  int mycoords[3];   MPI_Comm_rank(parameters->comm, &myrank);
-  MPI_Cart_coords(parameters->comm, myrank, 3, mycoords);
+  int mycoords[3];   MPI_Comm_rank(parameters->comm, &(parameters->local_rank));
+  MPI_Cart_coords(parameters->comm, parameters->local_rank, 3, mycoords);
   double mybounds[6] = {mycoords[0]*(geometry->x/prcperdim[0]), (mycoords[0]+1)*(geometry->x/prcperdim[0]), mycoords[1]*(geometry->y/prcperdim[1]), (mycoords[1]+1)*(geometry->y/prcperdim[1]),mycoords[2]*(geometry->z/prcperdim[2]), (mycoords[2]+1)*geometry->z/prcperdim[2]};
 // ^sorry that's a long line^
   int myneighb[6];
-  MPI_Cart_shift(parameters->comm, 0, -1, &myrank, &myneighb[0]);
-  MPI_Cart_shift(parameters->comm, 0, 1, &myrank, &myneighb[1]);
-  MPI_Cart_shift(parameters->comm, 1, -1, &myrank, &myneighb[2]);
-  MPI_Cart_shift(parameters->comm, 1, 1, &myrank, &myneighb[3]);
-  MPI_Cart_shift(parameters->comm, 2, -1, &myrank, &myneighb[4]);
-  MPI_Cart_shift(parameters->comm, 2, 1, &myrank, &myneighb[5]);
+  MPI_Cart_shift(parameters->comm, 0, -1, &(parameters->local_rank), &myneighb[0]);
+  MPI_Cart_shift(parameters->comm, 0, 1, &(parameters->local_rank), &myneighb[1]);
+  MPI_Cart_shift(parameters->comm, 1, -1, &(parameters->local_rank), &myneighb[2]);
+  MPI_Cart_shift(parameters->comm, 1, 1, &(parameters->local_rank), &myneighb[3]);
+  MPI_Cart_shift(parameters->comm, 2, -1, &(parameters->local_rank), &myneighb[4]);
+  MPI_Cart_shift(parameters->comm, 2, 1, &(parameters->local_rank), &myneighb[5]);
   
   // Set up material
   material = init_material(parameters);
@@ -75,10 +75,10 @@ int main(int argc, char *argv[])
   if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
       // Create source bank and initial source distribution
   {source_bank = init_source_bank(parameters, geometry);
-  distribute_sb(mycoords, parameters, prcperdim, myrank, source_bank, &my_sourcebank);
+  distribute_sb(mycoords, parameters, prcperdim, source_bank, &my_sourcebank);
   free_bank(source_bank); ///is this appropriate placement?
   }
-  else distribute_sb(mycoords, parameters, prcperdim, myrank, my_sourcebank, &my_sourcebank);
+  else distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
   
   // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
   
   //add Barrier here?
   
-  if(myrank==0){
+  if(parameters->local_rank==0){
   center_print("SIMULATION", 79);
   border_print();
   printf("%-15s %-15s %-15s\n", "BATCH", "KEFF", "MEAN KEFF");
@@ -100,13 +100,13 @@ int main(int argc, char *argv[])
   ///note: test at some point to see if it is implemented/functional, and if so potentially remove the else
   else {MPI_Barrier(cube); t1 = timer();}
   
-  run_eigenvalue(myrank, myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
+  run_eigenvalue(myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
   
   // Stop time
   if(MPI_WTIME_IS_GLOBAL) {t2 = MPI_Wtime();}
   else {MPI_Barrier(cube); t2 = timer();}
   
-  if(myrank==0) printf("Simulation time: %f secs\n", t2-t1);
+  if(parameters->local_rank==0) printf("Simulation time: %f secs\n", t2-t1);
 
   // Free memory
   MPI_Type_free(&parameters->type);
