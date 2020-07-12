@@ -1,6 +1,6 @@
 #include "header.h"
 
-void run_eigenvalue(int myrank, int myneighb[], double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff){
+void run_eigenvalue(int myneighb[], double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff){
   
   int i_b; // index over batches
   int i_a = -1; // index over active batches
@@ -45,7 +45,8 @@ void run_eigenvalue(int myrank, int myneighb[], double localbounds[6], Parameter
 	// Set seed for particle i_p by skipping ahead in the random number
 	// sequence stride*(total particles simulated) numbers from the initial
 	// seed. This allows for reproducibility of the particle history.
-        rn_skip((i_b*parameters->n_generations + i_g)*parameters->n_particles + i_p);
+        rn_skip((i_b*parameters->n_generations + i_g)*parameters->n_particles + parameters->local_rank*i_p); 
+	      //^this will give some repetition still, but not as much as without multiplying by the local rank
 
         // Transport the next particle
         transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p]));
@@ -57,7 +58,7 @@ void run_eigenvalue(int myrank, int myneighb[], double localbounds[6], Parameter
   
     ///transport those particles
     for(int i_p2 =0; i_p2<source_bank->n; i_p2++){ 
-     rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p); ///may need changing
+     rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p2*parameters->local_rank); ///may need changing
      transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p2]));
 
     }
@@ -79,7 +80,7 @@ void run_eigenvalue(int myrank, int myneighb[], double localbounds[6], Parameter
       synchronize_bank(source_bank, fission_bank);
     }
 
-	  if(myrank==0){
+	  if(parameters->local_rank==0){
     // Calculate k effective
     keff_batch /= parameters->n_generations;
     if(i_a >= 0){
@@ -94,7 +95,7 @@ void run_eigenvalue(int myrank, int myneighb[], double localbounds[6], Parameter
           Tally *overall_tally = init_tally(parameters); ///may need changing
           MPI_Reduce(tally->flux, overall_tally->flux, tally->n*tally->n*tally->n, MPI_DOUBLE, MPI_SUM, 0, parameters->comm); ///check what the size of tally->flux[] is
           
-	  if(myrank==0){
+	  if(parameters->local_rank==0){
 	      write_tally(overall_tally, parameters->tally_file);///
 	      }
 	      
@@ -102,7 +103,7 @@ void run_eigenvalue(int myrank, int myneighb[], double localbounds[6], Parameter
     }}
 
     // Status text
-    if(myrank==0) {print_status(i_a, i_b, keff_batch, keff_mean, keff_std);
+    if(parameters->local_rank==0) {print_status(i_a, i_b, keff_batch, keff_mean, keff_std);
     // Write out keff
       if(parameters->write_keff == TRUE){
          write_keff(keff, parameters->n_active, parameters->keff_file);}
