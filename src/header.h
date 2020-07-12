@@ -66,6 +66,7 @@ typedef struct Parameters_{
   char *keff_file; // path to write keff to
   MPI_Datatype type;
   MPI_Comm comm;
+  int local_rank;
   int n_prc;
   int n_prc_x, n_prc_y, n_prc_z;
   int n_prc_auto;
