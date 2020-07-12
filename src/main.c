@@ -13,8 +13,8 @@ int main(int argc, char *argv[])
 
     MPI_Init(&argc, &argv);
   // Establish MPI values
-    int prcsize, myrank, prcperdim[3], periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
-  MPI_Comm_size(MPI_COMM_WORLD, &prcsize); ///NOTE: moving these later and using 'cube' still didn't work
+    int myrank, prcperdim[3], periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
+  MPI_Comm_size(MPI_COMM_WORLD, &(parameters->n_prc)); ///NOTE: moving these later and using 'cube' still didn't work
   MPI_Comm cube; //really ought to have a better name
   
   // Get inputs: set parameters to default values, parse parameter file,
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
   if(myrank==0) print_parameters(parameters);
   
   if(parameters->n_prc_auto == TRUE)
-  MPI_Dims_create(prcsize, 3, prcperdim); ///
+  MPI_Dims_create(parameters->n_prc, 3, prcperdim); ///
   else{
   prcperdim[0]=parameters->n_prc_x; 
   prcperdim[1]=parameters->n_prc_y;
@@ -50,17 +50,18 @@ int main(int argc, char *argv[])
  
   // Create 3D topography and orient self
   MPI_Cart_create(MPI_COMM_WORLD, 3, prcperdim, periodicity, 1, &cube); ///NOTE: this line doesn't seem to actually create the communicator
-  int mycoords[3];   MPI_Comm_rank(cube, &myrank);
-  MPI_Cart_coords(cube, myrank, 3, mycoords);
+  parameters->comm = cube;
+  int mycoords[3];   MPI_Comm_rank(parameters->comm, &myrank);
+  MPI_Cart_coords(parameters->comm, myrank, 3, mycoords);
   double mybounds[6] = {mycoords[0]*(geometry->x/prcperdim[0]), (mycoords[0]+1)*(geometry->x/prcperdim[0]), mycoords[1]*(geometry->y/prcperdim[1]), (mycoords[1]+1)*(geometry->y/prcperdim[1]),mycoords[2]*(geometry->z/prcperdim[2]), (mycoords[2]+1)*geometry->z/prcperdim[2]};
 // ^sorry that's a long line^
   int myneighb[6];
-  MPI_Cart_shift(cube, 0, -1, &myrank, &myneighb[0]);
-  MPI_Cart_shift(cube, 0, 1, &myrank, &myneighb[1]);
-  MPI_Cart_shift(cube, 1, -1, &myrank, &myneighb[2]);
-  MPI_Cart_shift(cube, 1, 1, &myrank, &myneighb[3]);
-  MPI_Cart_shift(cube, 2, -1, &myrank, &myneighb[4]);
-  MPI_Cart_shift(cube, 2, 1, &myrank, &myneighb[5]);
+  MPI_Cart_shift(parameters->comm, 0, -1, &myrank, &myneighb[0]);
+  MPI_Cart_shift(parameters->comm, 0, 1, &myrank, &myneighb[1]);
+  MPI_Cart_shift(parameters->comm, 1, -1, &myrank, &myneighb[2]);
+  MPI_Cart_shift(parameters->comm, 1, 1, &myrank, &myneighb[3]);
+  MPI_Cart_shift(parameters->comm, 2, -1, &myrank, &myneighb[4]);
+  MPI_Cart_shift(parameters->comm, 2, 1, &myrank, &myneighb[5]);
   
   // Set up material
   material = init_material(parameters);
@@ -74,10 +75,10 @@ int main(int argc, char *argv[])
   if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
       // Create source bank and initial source distribution
   {source_bank = init_source_bank(parameters, geometry);
-  distribute_sb(mycoords, parameters, prcperdim, myrank, spatialgrid, source_bank, &my_sourcebank);
+  distribute_sb(mycoords, parameters, prcperdim, myrank, source_bank, &my_sourcebank);
   free_bank(source_bank); ///is this appropriate placement?
   }
-  else distribute_sb(mycoords, parameters, prcperdim, myrank, spatialgrid, my_sourcebank, &my_sourcebank);
+  else distribute_sb(mycoords, parameters, prcperdim, myrank, my_sourcebank, &my_sourcebank);
   
   // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
   ///note: test at some point to see if it is implemented/functional, and if so potentially remove the else
   else {MPI_Barrier(cube); t1 = timer();}
   
-  run_eigenvalue(cube, myrank, myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
+  run_eigenvalue(myrank, myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
   
   // Stop time
   if(MPI_WTIME_IS_GLOBAL) {t2 = MPI_Wtime();}
