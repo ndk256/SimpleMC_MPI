@@ -13,8 +13,8 @@ int main(int argc, char *argv[])
 
     MPI_Init(&argc, &argv);
   // Establish MPI values
-    int prcperdim[3], periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
-  MPI_Comm_size(MPI_COMM_WORLD, &(parameters->n_prc)); ///NOTE: moving these later and using 'cube' still didn't work
+    int prcperdim[3]={0}, periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
+  MPI_Comm_size(MPI_COMM_WORLD, &(parameters->n_prc));
   MPI_Comm cube; //really ought to have a better name
   
   // Get inputs: set parameters to default values, parse parameter file,
