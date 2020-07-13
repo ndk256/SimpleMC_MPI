@@ -146,14 +146,14 @@ void parse_parameters(Parameters *parameters)
       strcpy(parameters->keff_file, s);
     }
     
-    else if(strcmp(s, "n_prc_auto")==0){
+    else if(strcmp(s, "nprc_auto")==0){
        s = strtok(NULL, "=\n");
         if(strcasecmp(s, "true") == 0)
           parameters->n_prc_auto = TRUE;
         else if(strcasecmp(s, "false") == 0)
           parameters->n_prc_auto = FALSE;
         else
-       print_error("Invalid option for parameter 'n_prc_auto': must be 'true' or 'false'");
+       print_error("Invalid option for parameter 'nprc_auto': must be 'true' or 'false'");
       }
 
     else if(strcmp(s, "n_prc_x") == 0){
