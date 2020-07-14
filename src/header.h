@@ -165,7 +165,7 @@ void free_tally(Tally *tally);
 
 ///localize.c function prototypes
 Parameters *localize_parameters(Parameters *par, int dims[6]);
-void distrib_particle(int prcoords[3], Parameters *p, int dim, Bank **sb);
+void distrib_particle(int prcoords[3], int mycoords[3], Parameters *par, int dim, Bank **sb);
 void distribute_sb(int mycoords[3], Parameters *p, int prcoords[3], Bank *sb, Bank **mysb); 
 
 // transport.c function prototypes
