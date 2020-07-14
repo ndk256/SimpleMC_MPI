@@ -66,7 +66,7 @@ distrib_particle(prcoords, mycoords, p, 0, mysb);
 MPI_Barrier(p->comm);
 
 //for the processes handling (x,0,0)
-if(mycoords[1]==0 && mycoords[2]==0){
+if(prcoords[0]>1 && mycoords[1]==0 && mycoords[2]==0){
 if(mycoords[0]!=0)
 {MPI_Probe(MPI_ANY_SOURCE, 0, parameters->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
@@ -80,7 +80,7 @@ distrib_particle(prcoords, mycoords, p, 1, mysb);
 MPI_Barrier(p->comm);
 
 //for the processes handling (x,y,0)
-if(mycoords[2]==0 && mycoords[0]!=0) {
+if(prcoords[1] > 1 && mycoords[2]==0 && mycoords[0]!=0) {
 MPI_Probe(MPI_ANY_SOURCE, 1, p->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
 MPI_Recv(mysb->p+index, msg_size, p->type, MPI_ANY_SOURCE, 1, p->comm, &status);
@@ -91,7 +91,7 @@ index+=msg_size;
 
 MPI_Barrier(p->comm);
 
-if(mycoords[2]!=0)
+if(prcoords[2] > 1 && mycoords[2]!=0)
 {MPI_Probe(MPI_ANY_SOURCE, 2, p->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
 MPI_Recv((*mysb)->p+index, msg_size, p->type, status.MPI_SOURCE, 2, p->comm, &status);
