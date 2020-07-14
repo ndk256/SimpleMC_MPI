@@ -75,10 +75,10 @@ int main(int argc, char *argv[])
   if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
       // Create source bank and initial source distribution
   {source_bank = init_source_bank(parameters, geometry);
-  distribute_sb(mycoords, parameters, prcperdim, source_bank, &my_sourcebank);
+  distribute_sb(mycoords, local_par, prcperdim, source_bank, &my_sourcebank);
   free_bank(source_bank); ///is this appropriate placement?
   }
-  else distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
+  else distribute_sb(mycoords, local_par, prcperdim, my_sourcebank, &my_sourcebank);
   
   // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
