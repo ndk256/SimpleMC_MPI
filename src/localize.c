@@ -97,6 +97,8 @@ MPI_Get_count(&status, p->type, &msg_size);
 MPI_Recv((*mysb)->p+index, msg_size, p->type, status.MPI_SOURCE, 2, p->comm, &status);
 (*mysb)->n += msg_size;}
 
+MPI_Barrier(p->comm);
+   
 (*mysb)->p = realloc((*mysb)->p, sizeof(Particle)*index); //no idea if this is right
 return;
 }
