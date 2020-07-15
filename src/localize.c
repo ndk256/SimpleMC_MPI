@@ -32,7 +32,7 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
       {
          send[banksz] = sb->p[i_p];
          banksz++;
-         sb->p[i_p]->alive = FALSE; ///double-check if correct, but basically kill the version that's not on the right processes
+         (*sb)->p[i_p].alive = FALSE; ///double-check if correct, but basically kill the version that's not on the right processes
        //experimental alternative:
          /*
          sb->p[i_p] = sb->p[sb->n];
