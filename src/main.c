@@ -56,12 +56,9 @@ int main(int argc, char *argv[])
   double mybounds[6] = {mycoords[0]*(geometry->x/prcperdim[0]), (mycoords[0]+1)*(geometry->x/prcperdim[0]), mycoords[1]*(geometry->y/prcperdim[1]), (mycoords[1]+1)*(geometry->y/prcperdim[1]),mycoords[2]*(geometry->z/prcperdim[2]), (mycoords[2]+1)*geometry->z/prcperdim[2]};
 // ^sorry that's a long line^
   int myneighb[6];
-  MPI_Cart_shift(parameters->comm, 0, -1, &(parameters->local_rank), &myneighb[0]);
-  MPI_Cart_shift(parameters->comm, 0, 1, &(parameters->local_rank), &myneighb[1]);
-  MPI_Cart_shift(parameters->comm, 1, -1, &(parameters->local_rank), &myneighb[2]);
-  MPI_Cart_shift(parameters->comm, 1, 1, &(parameters->local_rank), &myneighb[3]);
-  MPI_Cart_shift(parameters->comm, 2, -1, &(parameters->local_rank), &myneighb[4]);
-  MPI_Cart_shift(parameters->comm, 2, 1, &(parameters->local_rank), &myneighb[5]);
+  MPI_Cart_shift(parameters->comm, 0, 1, &myneighb[0], &myneighb[1]);
+  MPI_Cart_shift(parameters->comm, 1, 1, &myneighb[2], &myneighb[3]);
+  MPI_Cart_shift(parameters->comm, 2, 1, &myneighb[4], &myneighb[5]);
   
   // Set up material
   material = init_material(parameters);
