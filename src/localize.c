@@ -40,7 +40,8 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
          */
       }
    }
-   MPI_Cart_shift(p->comm, dim, i, &(p->local_rank), &destrank);
+   int* temp = malloc(sizeof(int));
+   MPI_Cart_shift(p->comm, dim, i, temp, &destrank);
     MPI_Request mpir = MPI_REQUEST_NULL;
    MPI_Isend(send, banksz, p->type, destrank, dim, p->comm, &mpir); /// unsure about the last argument
    banksz=0;
