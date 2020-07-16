@@ -40,7 +40,7 @@ void run_eigenvalue(int myneighb[], double localbounds[6], Parameters *parameter
         int send_indices[6] = { }; //initializes empty array
 	    
       // Loop over particles
-      for(i_p=0; i_p<parameters->n_particles; i_p++){
+      for(i_p=0; i_p<source_bank->n; i_p++){ ///
 
 	// Set seed for particle i_p by skipping ahead in the random number
 	// sequence stride*(total particles simulated) numbers from the initial
@@ -51,15 +51,16 @@ void run_eigenvalue(int myneighb[], double localbounds[6], Parameters *parameter
         // Transport the next particle
         transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p]));
       }
-		  
+	
+	    ///note: currently haven't yet entered the loop below
  while(send_indices[0]>0 || send_indices[1]>0 || send_indices[2]>0 || send_indices[3]>0 || send_indices[4]>0 || send_indices[5]>0){
   // send particles to the instance of source_bank on the appropriate process
   sendrecv_particles(parameters, source_bank, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, myneighb, localbounds);
   
     ///transport those particles
-    for(int i_p2 =0; i_p2<source_bank->n; i_p2++){ 
-     rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p2*parameters->local_rank*parameters->local_rank); ///may need changing
-     transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p2]));
+    for(i_p =0; i_p<source_bank->n; i_p++){ 
+     rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p*parameters->local_rank*parameters->local_rank); ///may need changing
+     transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p]));
 
     }
   }			
