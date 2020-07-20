@@ -40,11 +40,13 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
          */
       }
    }
+  if(i!=mycoords[dim]){
    int* temp = malloc(sizeof(int));
    MPI_Cart_shift(p->comm, dim, i, temp, &destrank);
     MPI_Request mpir = MPI_REQUEST_NULL;
    MPI_Isend(send, banksz, p->type, destrank, dim, p->comm, &mpir); /// unsure about the last argument
-   banksz=0;
+  }
+     banksz=0;
 }   
 
 return;
@@ -73,8 +75,11 @@ if(mycoords[0]!=0)
 MPI_Get_count(&status, p->type, &msg_size);
 MPI_Recv(mysb->p, msg_size, p->type, MPI_ANY_SOURCE, 0, p->comm, MPI_STATUS_IGNORE);
 index+=msg_size;
-(*mysb)->n += msg_size;}
-
+(*mysb)->n += msg_size;
+   
+   for(int i=0; i<index; i++)
+      (*mysb)->p[i].alive=TRUE;
+}
 distrib_particle(prcoords, mycoords, p, 1, mysb);
 }
 
@@ -85,6 +90,10 @@ if(prcoords[1] > 1 && mycoords[2]==0 && mycoords[0]!=0) {
 MPI_Probe(MPI_ANY_SOURCE, 1, p->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
 MPI_Recv(mysb->p+index, msg_size, p->type, MPI_ANY_SOURCE, 1, p->comm, &status);
+   
+   for(int i=index; i<index+msg_size; i++)
+      (*mysb)->p[i].alive=TRUE;
+   
 distrib_particle(prcoords, mycoords, p, 2, mysb);
 index+=msg_size;
    (*mysb)->n += msg_size;
@@ -96,7 +105,10 @@ if(prcoords[2] > 1 && mycoords[2]!=0)
 {MPI_Probe(MPI_ANY_SOURCE, 2, p->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
 MPI_Recv((*mysb)->p+index, msg_size, p->type, status.MPI_SOURCE, 2, p->comm, &status);
-(*mysb)->n += msg_size;}
+(*mysb)->n += msg_size;
+for(int i=index; i<index+msg_size; i++)
+      (*mysb)->p[i].alive=TRUE;
+}
 
 MPI_Barrier(p->comm);
    
