@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
   free(keff); free(mykeff);
   free_tally(global_tally); free(mytally);
   free_bank(fission_bank);
-  free_bank(my_sourcebank); 
+  if(!(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)) free_bank(my_sourcebank); //causes segmentation fault otherwise 
   free_material(material);
   free(geometry);
   free(parameters); free(local_par);
