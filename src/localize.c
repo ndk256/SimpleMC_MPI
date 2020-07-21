@@ -2,14 +2,11 @@
 
 Parameters *localize_parameters(Parameters *par,int dims[])
    {
-   Parameters *p = malloc(sizeof(Parameters));
-   *p = *par; //i forget how pointers work but hopefully this does
-   
-   p->gx = par->gx/dims[0];
-   p->gy = par->gy/dims[1];
-   p->gz = par->gz/dims[2];
-   p->n_bins = par->n_bins/((dims[0]+dims[1]+dims[2])/3); ///hopefully this is a good enough approximation
-   return p;
+   par->gx = par->gx/dims[0];
+   par->gy = par->gy/dims[1];
+   par->gz = par->gz/dims[2];
+   //p->n_bins = par->n_bins/((dims[0]+dims[1]+dims[2])/3); //unsure if needed
+   return par;
 }
 
 //Sends particles to processes along the axis indicated by dim
