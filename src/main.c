@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-  Parameters *parameters, *local_par; // user defined parameters
+  Parameters *parameters; // user defined parameters
   Geometry *geometry; // homogenous cube geometry
   Material *material; // problem material
   Bank *source_bank; // array for particle source sites
@@ -31,9 +31,7 @@ int main(int argc, char *argv[])
   prcperdim[1]=parameters->n_prc_y;
   prcperdim[2]=parameters->n_prc_z;
   }
-  
-  local_par = localize_parameters(parameters, prcperdim);
-  
+    
   // Set initial RNG seed
   set_initial_seed(parameters->seed);
   set_stream(STREAM_INIT);
@@ -65,24 +63,31 @@ int main(int argc, char *argv[])
 
   // Set up tallies
   global_tally = init_tally(parameters);
-  my_tally = init_tally(local_par);
-
-  my_sourcebank = init_bank(parameters->n_particles);
   
   if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
       // Create source bank and initial source distribution
-  {source_bank = init_source_bank(parameters, geometry);
-  distribute_sb(mycoords, local_par, prcperdim, source_bank, &my_sourcebank);
-  free_bank(source_bank); ///is this appropriate placement?
-  }
-  else distribute_sb(mycoords, local_par, prcperdim, my_sourcebank, &my_sourcebank);
+  {source_bank = init_source_bank(parameters, geometry);}
   
-  // Create (local) fission bank
+    // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
-
+  
   // Set up array for k effective
   keff = calloc(parameters->n_active, sizeof(double));
-  mykeff = calloc(local_par->n_active, sizeof(double)); ///unsure if correct
+  
+  /// Set up localization
+  localize_parameters(&parameters, prcperdim);
+  
+  my_tally = init_tally(parameters);
+  my_sourcebank = init_bank(parameters->n_particles);
+  mykeff = calloc(parameters->n_active, sizeof(double)); ///unsure if correct
+  
+  if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)
+      // Create source bank and initial source distribution
+  {
+  distribute_sb(mycoords, parameters, prcperdim, source_bank, &my_sourcebank);
+  free_bank(source_bank); ///is this appropriate placement?
+  }
+  else distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
   
   //add Barrier here?
   
@@ -97,7 +102,7 @@ int main(int argc, char *argv[])
   ///note: test at some point to see if it is implemented/functional, and if so potentially remove the else
   else {MPI_Barrier(cube); t1 = timer();}
   
-  run_eigenvalue(myneighb, mybounds, local_par, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
+  run_eigenvalue(myneighb, mybounds, parameters, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
   
   // Stop time
   if(MPI_WTIME_IS_GLOBAL) {t2 = MPI_Wtime();}
@@ -113,7 +118,7 @@ int main(int argc, char *argv[])
   if(!(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)) free_bank(my_sourcebank); //causes segmentation fault otherwise 
   free_material(material);
   free(geometry);
-  free(parameters); free(local_par);
+  free(parameters);
   
   MPI_Comm_free(&cube);
   MPI_Finalize();
