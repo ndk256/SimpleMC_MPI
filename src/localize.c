@@ -1,6 +1,6 @@
 #include "header.h"
 
-Parameters *localize_parameters(Parameters *par,int dims[])
+void localize_parameters(Parameters *par,int dims[])
    {
    par->gx = par->gx/dims[0];
    par->gy = par->gy/dims[1];
