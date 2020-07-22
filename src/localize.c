@@ -10,9 +10,8 @@ void localize_parameters(Parameters *par, int dims[])
 }
 
 //Sends particles to processes along the axis indicated by dim
-void distrib_particle(int nprc[], int mycoords[], Parameters *par, int dim, Bank **sb)
+void distrib_particle(int d, int mycoords[], Parameters *par, int dim, Bank **sb)
 {
-int d = nprc[dim]; //number of processes on the given axis
 int banksz = 0;
 Particle *send; send = (Particle*) malloc(((*sb)->n)*sizeof(Particle)); /// attempting to be dynamic
 int destrank;
