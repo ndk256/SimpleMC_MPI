@@ -60,6 +60,7 @@ typedef struct Parameters_{
   double gx; // geometry size in x
   double gy; // geometry size in y
   double gz; // geometry size in z
+  int neighb[6]; /// ranks of Cartesian neighbours
   int write_tally; // whether to output tallies
   int write_keff; // whether to output keff
   char *tally_file; // path to write tallies to
@@ -165,8 +166,8 @@ void free_tally(Tally *tally);
 
 ///localize.c function prototypes
 void localize_parameters(Parameters *par, int dims[6]);
-void distrib_particle(int prcoords[3], int mycoords[3], Parameters *par, int dim, Bank **sb);
-void distribute_sb(int mycoords[3], Parameters *p, int prcoords[3], Bank *sb, Bank **mysb); 
+void distrib_particle(int nprc, int mycoords[3], Parameters *par, int dim, Bank **sb);
+void distribute_sb(int mycoords[3], Parameters *p, int nprc[3], Bank *sb, Bank **mysb); 
 
 // transport.c function prototypes
 void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[], Bank *fission_bank, Tally *tally, Particle *p);
@@ -178,8 +179,8 @@ void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle 
 void collision(Material *material, Bank *fission_bank, double nu, Particle *p);
 
 // eigenvalue.c function prototypes
-void run_eigenvalue(int myneighb[], double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff);
-void sendrecv_particles(Parameters *p, Bank *bank, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[6], int my_neighb[6], double mybounds[]);
+void run_eigenvalue(double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff);
+void sendrecv_particles(Parameters *p, Bank *bank, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[6], double mybounds[]);
 void synchronize_bank(Bank *source_bank, Bank *fission_bank);
 void calculate_keff(double *keff, double *mean, double *std, int n);
 
