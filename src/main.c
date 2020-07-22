@@ -15,7 +15,6 @@ int main(int argc, char *argv[])
   // Establish MPI values
     int prcperdim[3]={0}, periodicity[3]={1,1,1}; ///I'm unsure how this will be good for non-periodic materials but I'll just trust that it is
   MPI_Comm_size(MPI_COMM_WORLD, &(parameters->n_prc));
-  MPI_Comm cube; //really ought to have a better name
   
   // Get inputs: set parameters to default values, parse parameter file,
   // override with any command line inputs, and print parameters
@@ -47,16 +46,15 @@ int main(int argc, char *argv[])
     periodicity[2]=1;}*/
  
   // Create 3D topography and orient self
-  MPI_Cart_create(MPI_COMM_WORLD, 3, prcperdim, periodicity, 1, &cube); ///NOTE: this line doesn't seem to actually create the communicator
-  parameters->comm = cube;
+  MPI_Cart_create(MPI_COMM_WORLD, 3, prcperdim, periodicity, 1, &parameters->comm);
   int mycoords[3];   MPI_Comm_rank(parameters->comm, &(parameters->local_rank));
   MPI_Cart_coords(parameters->comm, parameters->local_rank, 3, mycoords);
   double mybounds[6] = {mycoords[0]*(geometry->x/prcperdim[0]), (mycoords[0]+1)*(geometry->x/prcperdim[0]), mycoords[1]*(geometry->y/prcperdim[1]), (mycoords[1]+1)*(geometry->y/prcperdim[1]),mycoords[2]*(geometry->z/prcperdim[2]), (mycoords[2]+1)*geometry->z/prcperdim[2]};
 // ^sorry that's a long line^
   int myneighb[6];
-  MPI_Cart_shift(parameters->comm, 0, 1, &myneighb[0], &myneighb[1]);
-  MPI_Cart_shift(parameters->comm, 1, 1, &myneighb[2], &myneighb[3]);
-  MPI_Cart_shift(parameters->comm, 2, 1, &myneighb[4], &myneighb[5]);
+  MPI_Cart_shift(parameters->comm, 0, 1, &(parameters->neighb[0]), &(parameters->neighb[1]));
+  MPI_Cart_shift(parameters->comm, 1, 1, &(parameters->neighb[2]), &(parameters->neighb[3]));
+  MPI_Cart_shift(parameters->comm, 2, 1, &(parameters->neighb[4]), &(parameters->neighb[5]));
   
   // Set up material
   material = init_material(parameters);
@@ -68,14 +66,14 @@ int main(int argc, char *argv[])
       // Create source bank and initial source distribution
   {source_bank = init_source_bank(parameters, geometry);}
   
-    // Create (local) fission bank
-  fission_bank = init_fission_bank(parameters);
-  
   // Set up array for k effective
   keff = calloc(parameters->n_active, sizeof(double));
   
   /// Set up localization
   localize_parameters(&parameters, prcperdim);
+  
+  // Create (local) fission bank
+  fission_bank = init_fission_bank(parameters);
   
   my_tally = init_tally(parameters);
   my_sourcebank = init_bank(parameters->n_particles);
@@ -100,27 +98,30 @@ int main(int argc, char *argv[])
   // Start time
   if(MPI_WTIME_IS_GLOBAL) t1 = MPI_Wtime(); /// utilize the wall clock if it's implemented
   ///note: test at some point to see if it is implemented/functional, and if so potentially remove the else
-  else {MPI_Barrier(cube); t1 = timer();}
+  else {MPI_Barrier(parameters->comm); t1 = timer();}
   
-  run_eigenvalue(myneighb, mybounds, parameters, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
+  run_eigenvalue(mybounds, parameters, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);    
   
   // Stop time
   if(MPI_WTIME_IS_GLOBAL) {t2 = MPI_Wtime();}
-  else {MPI_Barrier(cube); t2 = timer();}
+  else {MPI_Barrier(parameters->comm); t2 = timer();}
   
   if(parameters->local_rank==0) printf("Simulation time: %f secs\n", t2-t1);
 
   // Free memory
-  MPI_Type_free(&parameters->type);
   free(keff); free(mykeff);
   free_tally(global_tally); free(mytally);
   free_bank(fission_bank);
   if(!(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)) free_bank(my_sourcebank); //causes segmentation fault otherwise 
   free_material(material);
   free(geometry);
-  free(parameters);
   
-  MPI_Comm_free(&cube);
+  MPI_Barrier(parameters->comm);
+    
+  MPI_Type_free(&parameters->type);
+    MPI_Comm_free(&parameters->comm);
+free(parameters);
+  
   MPI_Finalize();
 
   return 0;
