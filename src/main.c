@@ -83,7 +83,6 @@ int main(int argc, char *argv[])
       // Create source bank and initial source distribution
   {
   distribute_sb(mycoords, parameters, prcperdim, source_bank, &my_sourcebank);
-  free_bank(source_bank); ///is this appropriate placement?
   }
   else distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
   
@@ -113,6 +112,8 @@ int main(int argc, char *argv[])
   free_tally(global_tally); free(mytally);
   free_bank(fission_bank);
   if(!(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)) free_bank(my_sourcebank); //causes segmentation fault otherwise 
+  else free_bank(source_bank);
+  
   free_material(material);
   free(geometry);
   
