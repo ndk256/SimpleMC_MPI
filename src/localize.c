@@ -23,7 +23,7 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
       int pcoords[3] = {(*sb)->p[i_p].x/par->gx, (*sb)->p[i_p].y/par->gy, (*sb)->p[i_p].z/par->gz};         
      //using integer division to get process-level coords
         /// (modify ^ if repeated redeclarations isn't good)
-        if(pcoords[dim] != mycoords[dim] && pcoords[dim] == i)
+        if(i!=mycoords[dim] && pcoords[dim] != mycoords[dim] && pcoords[dim] == i)
       /// this could be made more efficient; currently it will do a lot of double-checking
       {
          send[banksz] = (*sb)->p[i_p];
@@ -36,10 +36,9 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
          */
       }
    }
-  if(i!=mycoords[dim]){
     MPI_Request mpir = MPI_REQUEST_NULL;
     MPI_Isend(send, banksz, p->type, p->neighb[2*dim+1], dim, p->comm, &mpir); /// unsure about the last argument
-  }
+  
      banksz=0;
 }   
 
