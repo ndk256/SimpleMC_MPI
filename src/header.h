@@ -60,17 +60,17 @@ typedef struct Parameters_{
   double gx; // geometry size in x
   double gy; // geometry size in y
   double gz; // geometry size in z
-  int neighb[6]; /// ranks of Cartesian neighbours
+  int neighb[6]; // array storing neighbour processes
   int write_tally; // whether to output tallies
   int write_keff; // whether to output keff
   char *tally_file; // path to write tallies to
   char *keff_file; // path to write keff to
-  MPI_Datatype type;
-  MPI_Comm comm;
-  int local_rank;
-  int n_prc;
-  int n_prc_x, n_prc_y, n_prc_z;
-  int n_prc_auto;
+MPI_Datatype type; /// type used to transmit particle data in MPI messages
+MPI_Comm comm; ///
+int local_rank; ///
+int n_prc;
+int n_prc_x, n_prc_y, n_prc_z; /// number of processes per x, y, z dimension
+int n_prc_auto; /// whether to construct process-dimension setup automatically (with MPI_Dims_create) or use user/file inputs
 } Parameters;
 
 typedef struct Particle_{
@@ -126,6 +126,11 @@ typedef struct Bank_{
   void (*resize)(struct Bank_ *b);
 } Bank;
 
+typedef struct Buffer_{
+  Particle* bank;
+  unsigned int banksz;
+} Buffer;
+
 // io.c function prototypes
 void parse_parameters(Parameters *parameters);
 void read_CLI(int argc, char *argv[], Parameters *parameters);
@@ -166,21 +171,21 @@ void free_tally(Tally *tally);
 
 ///localize.c function prototypes
 void localize_parameters(Parameters *par, int dims[6]);
-void distrib_particle(int nprc, int mycoords[3], Parameters *par, int dim, Bank **sb);
-void distribute_sb(int mycoords[3], Parameters *p, int nprc[3], Bank *sb, Bank **mysb); 
+void distrib_particle(int d, int mycoords[3], Parameters *par, int dim, Bank **sb);
+void distribute_sb(int mycoords[3], Parameters *p, int nprc[3], Bank *sb, Bank **mysb);
 
 // transport.c function prototypes
-void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[], Bank *fission_bank, Tally *tally, Particle *p);
 double distance_to_boundary(Geometry *geometry, Particle *p);
 double distance_to_collision(Material *material);
 double dist_to_edge(Particle *p, double s_coords[6]);
 void cross_surface(Geometry *geometry, Particle *p);
-void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int indices[]);
 void collision(Material *material, Bank *fission_bank, double nu, Particle *p);
+void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[], Bank *fission_bank, Tally *tally, Particle *p);
+void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int indices[]);
 
 // eigenvalue.c function prototypes
 void run_eigenvalue(double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff);
-void sendrecv_particles(Parameters *p, Bank *bank, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[6], double mybounds[]);
+void sendrecv_particles(Parameters *p, Bank *bank, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[6], double mybounds[6]);
 void synchronize_bank(Bank *source_bank, Bank *fission_bank);
 void calculate_keff(double *keff, double *mean, double *std, int n);
 

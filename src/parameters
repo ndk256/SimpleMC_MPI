@@ -3,7 +3,7 @@
 ###################################################################
 
 # particles: number of particles to simulate
-particles=1000
+particles=200
 
 # batches: number of batches
 batches=10
@@ -62,14 +62,14 @@ tally_file=tally.dat
 # keff_file: path to keff output
 keff_file=keff.dat
 
-#nprc_auto: whether to decompose domain automatically or using inputs
+# n_prc_auto: whether to configure number of processes per dimension automatically or use inputted values
 nprc_auto=true
- 
+
 # n_prc_x: number of processes in x dimension
-n_prc_x=1
- 
+npx=2
+
 # n_prc_y: number of processes in y dimension
-n_prc_y=2
+npy=1
 
 # n_prc_z: number of processes in z dimension
-n_prc_z=1
+npz=1

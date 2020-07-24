@@ -19,8 +19,8 @@ utils.c \
 io.c \
 transport.c \
 tally.c \
-eigenvalue.c \
-localize.c
+localize.c \
+eigenvalue.c 
 
 OBJECTS = $(SOURCE:.c=.o)
 

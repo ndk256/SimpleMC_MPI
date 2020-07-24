@@ -4,7 +4,7 @@ Parameters *init_parameters(void)
 {
   Parameters *p = malloc(sizeof(Parameters));
 
-  p->n_particles = 1000000;
+  p->n_particles = 1000;
   p->n_batches = 10;
   p->n_generations = 1;
   p->n_active = 10;
@@ -24,18 +24,25 @@ Parameters *init_parameters(void)
   p->write_keff = FALSE;
   p->tally_file = NULL;
   p->keff_file = NULL;
+  //p->neighb = malloc(6*sizeof(int));
 
-    MPI_Datatype PARTICLE, base[2] = {MPI_INT,MPI_DOUBLE};
-      int blocks[2] = {2,8};
-      MPI_Aint offsets[2], lb, extent;
-      MPI_Type_get_extent(MPI_INT, &lb, &extent); ///finds the size of MPI_INT
-      offsets[0] = lb; offsets[1] = blocks[0]*extent; ///the "displacement" is the number of int items * the size of an MPI_INT item
-      MPI_Type_create_struct(2, blocks, offsets, base, &PARTICLE);
-      MPI_Type_commit(&PARTICLE);
-  
-  p->type=PARTICLE;
-  p->n_prc_auto = TRUE;
-  
+for(int i=0; i<6; i++)  
+p->neighb[i]=-1;
+
+  MPI_Datatype PARTICLE, base[2] = {MPI_INT,MPI_DOUBLE};
+    int blocks[2] = {2,8};
+    MPI_Aint offsets[2], lb, extent; ///Aint is address
+    MPI_Type_get_extent(MPI_INT, &lb, &extent); ///finds the size of MPI_INT
+    offsets[0] = lb; offsets[1] = blocks[0]*extent; ///the "displacement" is the     number of int items * the size of an MPI_INT item
+    MPI_Type_create_struct(2, blocks, offsets, base, &PARTICLE);
+    MPI_Type_commit(&PARTICLE);
+
+p->type=PARTICLE;
+p->n_prc_auto = TRUE;
+///n_prc init.s???
+
+//p->neighb = malloc(6*sizeof(int));
+
   return p;
 }
 
