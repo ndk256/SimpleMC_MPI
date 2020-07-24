@@ -53,9 +53,18 @@ void run_eigenvalue(double localbounds[6], Parameters *parameters, Geometry *geo
       }
 	
 	    ///note: currently haven't yet entered the loop below
- while(send_indices[0]>0 || send_indices[1]>0 || send_indices[2]>0 || send_indices[3]>0 || send_indices[4]>0 || send_indices[5]>0){
-  // send particles to the instance of source_bank on the appropriate process
-  sendrecv_particles(parameters, source_bank, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, localbounds);
+int tosend=0, stillsend=0;
+  do{
+  stillsend=0;
+  
+  if(send_indices[0]>0 || send_indices[1]>0 || send_indices[2]>0 || send_indic    es[3]>0 || send_indices[4]>0 || send_indices[5]>0) {tosend=1;}
+  else tosend=0;
+  
+  MPI_Barrier(parameters->comm);
+ MPI_Allreduce(&tosend, &stillsend, 1, MPI_INT, MPI_SUM, parameters->comm);
+  if(stillsend==0) break;  // send particles to the instance of source_bank on the appropriate process
+ 
+	  sendrecv_particles(parameters, source_bank, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, localbounds);
   
     ///transport those particles
     for(i_p =0; i_p<source_bank->n; i_p++){ 
@@ -63,7 +72,7 @@ void run_eigenvalue(double localbounds[6], Parameters *parameters, Geometry *geo
      transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p]));
 
     }
-  }			
+  }while(stillsend>0);			
 						
       // Switch RNG stream off tracking
       set_stream(STREAM_OTHER);
