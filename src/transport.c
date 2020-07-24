@@ -66,7 +66,7 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
           }
           else{
             dist = (s_coords[i] - p_coords[i])/p_angles[i];
-           if(dist <= 0){
+           if(dist <= 0 || dist/p_angles[i]<=0){
              dist = D_INF;
         }
     
