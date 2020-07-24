@@ -60,7 +60,7 @@ typedef struct Parameters_{
   double gx; // geometry size in x
   double gy; // geometry size in y
   double gz; // geometry size in z
-  int neighb[6]; // array storing neighbour processes
+  int neighb[6]; // ranks of Cartesian neighbours
   int write_tally; // whether to output tallies
   int write_keff; // whether to output keff
   char *tally_file; // path to write tallies to
@@ -126,10 +126,12 @@ typedef struct Bank_{
   void (*resize)(struct Bank_ *b);
 } Bank;
 
+/*This is still under construction; please ignore it for now
 typedef struct Buffer_{
   Particle* bank;
   unsigned int banksz;
 } Buffer;
+*/
 
 // io.c function prototypes
 void parse_parameters(Parameters *parameters);
