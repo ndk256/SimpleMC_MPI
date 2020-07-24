@@ -51,7 +51,6 @@ int main(int argc, char *argv[])
   MPI_Cart_coords(parameters->comm, parameters->local_rank, 3, mycoords);
   double mybounds[6] = {mycoords[0]*(geometry->x/prcperdim[0]), (mycoords[0]+1)*(geometry->x/prcperdim[0]), mycoords[1]*(geometry->y/prcperdim[1]), (mycoords[1]+1)*(geometry->y/prcperdim[1]),mycoords[2]*(geometry->z/prcperdim[2]), (mycoords[2]+1)*geometry->z/prcperdim[2]};
 // ^sorry that's a long line^
-  int myneighb[6];
   MPI_Cart_shift(parameters->comm, 0, 1, &(parameters->neighb[0]), &(parameters->neighb[1]));
   MPI_Cart_shift(parameters->comm, 1, 1, &(parameters->neighb[2]), &(parameters->neighb[3]));
   MPI_Cart_shift(parameters->comm, 2, 1, &(parameters->neighb[4]), &(parameters->neighb[5]));
@@ -75,7 +74,7 @@ int main(int argc, char *argv[])
   // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
   
-  my_tally = init_tally(parameters);
+  mytally = init_tally(parameters);
   my_sourcebank = init_bank(parameters->n_particles);
   mykeff = calloc(parameters->n_active, sizeof(double)); ///unsure if correct
   
