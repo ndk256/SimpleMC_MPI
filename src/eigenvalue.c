@@ -38,28 +38,19 @@ Particle toy1[parameters->n_particles];
 Particle toz0[parameters->n_particles];
 Particle toz1[parameters->n_particles];
       int send_indices[6] = { }; ///initializes empty array
-printf("%d's n= %d\n", parameters->local_rank, source_bank->n);
       // Loop over particles
       for(i_p=0; i_p<source_bank->n; i_p++){ //
-//printf("%d\t", i_p);
-//printf("\n%d\n", i_p);
 	// Set seed for particle i_p by skipping ahead in the random number
 	// sequence stride*(total particles simulated) numbers from the initial
 	// seed. This allows for reproducibility of the particle history.
         rn_skip((i_b*parameters->n_generations + i_g)*parameters->n_particles + parameters->local_rank*i_p);
-
+//^this will give some repetition still, but not as much as without multiplying by the local rank
+	      
         // Transport the next particle
         transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p])); 
-//printf("%d\n", i_p);
-
-//if(i_p>1) {
-//printf("\n\ndone test");return; /////TEMP!!!!!!///
-//}
-
-
 }
 int tosend=0, stillsend=0;
-//printf("START WHILE\n\n");
+	    
 do{
 stillsend=0;
 
@@ -68,21 +59,19 @@ else tosend=0;
 
 MPI_Barrier(parameters->comm);
 MPI_Allreduce(&tosend, &stillsend, 1, MPI_INT, MPI_SUM, parameters->comm);
-//printf("!%d", stillsend);
+
 if(stillsend==0) break;
 
-//printf("wh");
 ///send particles to the instance of source_bank on the appropriate process
 sendrecv_particles(parameters, source_bank, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, localbounds);
 
   ///transport those particles
-for(i_p =0; i_p<source_bank->n; i_p++){ rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p*parameters->local_rank*parameters->local_rank);
+for(i_p =0; i_p<source_bank->n; i_p++){ 
+	rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p*parameters->local_rank*parameters->local_rank);
 
-///transport particle(s)
-transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p]));
-}
-
-//printf("TR%d:%d, %d:%d, %d:%d\n",send_indices[0],send_indices[1],send_indices[2],send_indices[3],send_indices[4],send_indices[5]);
+	///transport particle(s)
+	transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p]));
+  }
 }while(stillsend>0);
 
       // Switch RNG stream off tracking
@@ -92,15 +81,12 @@ transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, t
 
 MPI_Barrier(parameters->comm);
 
-printf("%d's fiss: %d\n", parameters->local_rank, fission_bank->n);      
 // Calculate generation k_effective and accumulate batch k_effective
       int total_fish;
 //printf("%d's fissions:%d\n", parameters->local_rank, fission_bank->n);
       MPI_Reduce(&fission_bank->n, &total_fish, 1, MPI_INT, MPI_SUM, 0, parameters->comm);
-if(parameters->local_rank==0) printf("fiss:%d\n", total_fish);
       keff_gen = (double) total_fish / parameters->n_particles; ///ok to use parameters for that value?
       keff_batch += keff_gen;
-
 
       // Sample new source particles from the particles that were added to the
       // fission bank during this generation
@@ -140,8 +126,8 @@ if(parameters->local_rank==0){
 
 void sendrecv_particles(Parameters *p, Bank *bank, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[6], double mybounds[6])
 {
-///resizing/allocation of bank?
-
+/// To do: re-allocate bank->p memory? check if necessary
+	
 MPI_Status status; int n_to_recv, recv_count=0;
 MPI_Request reqs[6];
 
@@ -165,7 +151,8 @@ MPI_Recv(bank->p+recv_count, n_to_recv, p->type, p->neighb[1], 0, p->comm, MPI_S
 recv_count+=n_to_recv;
 
 int b_ind=recv_count;
-
+ 
+// sorting through the received particles to see which have/n't reached their final destination
 for(int i=0; i<recv_count; i++)
 {if(bank->p[i].y < mybounds[3] && bank->p[i].y >= mybounds[2] && bank->p[i].z < mybounds[5] && bank->p[i].z >= mybounds[4])
 {bank->p[i].alive = TRUE;
@@ -187,7 +174,6 @@ send_indices[5]++;}
 
 MPI_Wait(&reqs[0], MPI_STATUS_IGNORE);
 MPI_Wait(&reqs[1], MPI_STATUS_IGNORE);
-///is this good?
 
 ///here is where y sending should begin///
 MPI_Isend(toy0, send_indices[2]+1, p->type, p->neighb[2], 2, p->comm, &reqs[2]);
@@ -250,7 +236,8 @@ for(int i=0; i<recv_count; i++)
 ///resize bank
 ////sourcebank->resize=resize_particles???
 bank->n = recv_count;
-
+//bank->sz = recv_count; //?
+	
 return;
 }
 
