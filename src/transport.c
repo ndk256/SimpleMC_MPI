@@ -11,6 +11,11 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
 
   while(p->alive){
  
+    if(p->x<0) p->x=0.0;
+  if(p->y<0) p->y =0.0;
+  if(p->z<0) p->z = 0.0;
+  ///TEMP--still need to figure out how particles are getting "out" ///
+    
     ///Find distance to boundary of process section
     d_e = dist_to_edge(p, local_bounds); ///    
 
