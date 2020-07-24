@@ -10,8 +10,7 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
   double d;
 
   while(p->alive){
-   //if(parameters->local_rank==1) printf("loop\n");
-
+ 
     ///Find distance to boundary of process section
     d_e = dist_to_edge(p, local_bounds); ///    
 
@@ -26,7 +25,7 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
 if(d_b <= d_e && d_b <= d_c) d = d_b;
 else if (d_e <= d_b && d_e <= d_c) d = d_e;
 else d=d_c;
-//if(parameters->local_rank==1) printf("d is %.2f", d);
+
     // Advance particle
     p->x = p->x + d*p->u;
     p->y = p->y + d*p->v;
@@ -34,26 +33,21 @@ else d=d_c;
     // Case where particle crosses boundary
     if(d_b <= d_c&& d_b<= d_e){
       cross_surface(geometry, p);
-//if(parameters->local_rank==1) printf("b");
 }
 
 ///case of crossing into another process's subdomain
 else if(d_e <= d_c && d_e <= d_b)
 {
 cross_process(local_bounds, p, tox0, tox1, toy0, toy1, toz0, toz1, send_indices);
-//if(parameters->local_rank==1) printf("p");
 }
 else{
     // Case where particle has collision
       collision(material, fission_bank, parameters->nu, p);
-//if(parameters->local_rank==1) printf("f");
-}
-//if(parameters->local_rank==1) printf("\n now to tally");
+     }
       // Score tallies
       if(tally->tallies_on == TRUE){
         score_tally(parameters, material, tally, p);
-      }
-    
+      } 
   }
   return;
 }
@@ -64,32 +58,24 @@ double dist_to_edge(Particle *p, double s_coords[])
 ///mostly just a copy-paste of the distance_to_boundary function.
 int i; double dist;
    double d = D_INF;
- ///not used:
-//  int surfaces[6] = {X0, X1, Y0, Y1, Z0, Z1};
    double p_angles[6] = {p->u, p->u, p->v, p->v, p->w, p->w};
    double p_coords[6] = {p->x, p->x, p->y, p->y, p->z, p->z};
   
    for(i=0; i<6; i++){
-     //printf("for dim%d\t", i); 
      if(p_angles[i] == 0){
-       // printf("no dim");
         dist = D_INF;
       }
       else{
         dist = (s_coords[i] - p_coords[i])/p_angles[i];
-//printf("dist %.6f", dist);       
-if(dist <= 0 || dist/p_angles[i]<=0){
+      if(dist <= 0 || dist/p_angles[i]<=0){
          dist = D_INF;
-//printf(" which is a no");    
 }
       
       if(dist < d){
         d = dist;
-//printf("\ncurrent dist is:%.1f\n", d);      
-}
+      }
     }
  } 
-//printf("\tFINAL:%.2f\t", d);   
  return d;
 }
 
@@ -153,24 +139,6 @@ if(p->x==localbounds[0]) {tox0[indices[0]] = *p; indices[0]++;}
 p->alive=FALSE; ///this is merely temporary
 
 return;
-/*
-///locates which process the particle will cross into
-///there's probably a better/cleaner way but hopefully this works
-if(p->x==localbounds[0]) MPI_Cart_shift(comm, 0, -1, sendto, &sendto);
-if(p->x==localbounds[1]) MPI_Cart_shift(comm, 0, 1, sendto, &sendto);
-if(p->y==localbounds[2]) MPI_Cart_shift(comm, 1, -1, sendto, &sendto);
-if(p->y==localbounds[3]) MPI_Cart_shift(comm, 1, 1, sendto, &sendto);
-if(p->z==localbounds[4]) MPI_Cart_shift(comm, 2, -1, sendto, &sendto);
-if(p->z==localbounds[5]) MPI_cart_shift(comm, 2, 1, sendto, &sendto);
-///passing sendto as the "source process" argument allows for handling of corner cases
-
-if(sendto==MPI_PROC_NULL) {cross_surface(geometry, p); return;} ///reread to check if this case will ever occur/be needed
-
-MPI_Send(p, 1, PARTICLE, sendto, 0, comm);
- ///check which variant to use
-
-return;
-*/
 }
 
 // Handles a particle crossing a surface in the geometry
