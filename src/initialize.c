@@ -41,8 +41,6 @@ p->type=PARTICLE;
 p->n_prc_auto = TRUE;
 ///n_prc init.s???
 
-//p->neighb = malloc(6*sizeof(int));
-
   return p;
 }
 
