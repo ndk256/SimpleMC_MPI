@@ -39,7 +39,7 @@ prcperdim[2]=parameters->n_prc_z;
 MPI_Cart_create(MPI_COMM_WORLD, 3, prcperdim, periodicity, 1, &(parameters->comm));
 MPI_Comm_rank(parameters->comm, &(parameters->local_rank)); //
 
-MPI_Barrier(parameters->comm); //or commworld?
+MPI_Barrier(parameters->comm);
 int mycoords[3];
 MPI_Cart_coords(parameters->comm, parameters->local_rank, 3, mycoords);
 if(parameters->local_rank==0)  print_parameters(parameters);
@@ -48,7 +48,6 @@ if(parameters->local_rank==0)  print_parameters(parameters);
 double mybounds[6] = {mycoords[0]*(geometry->x/prcperdim[0]), (mycoords[0]+1)*(geometry->x/prcperdim[0]), mycoords[1]*(geometry->y/prcperdim[1]), (mycoords[1]+1)*(geometry->y/prcperdim[1]),mycoords[2]*(geometry->z/prcperdim[2]), (mycoords[2]+1)*geometry->z/prcperdim[2]}; ///is this correct?
 
 ///Getting the adjacent processes
-for(int i=0; i<6; i++) {parameters->neighb[i]=0;} ////TEMP////
 MPI_Cart_shift(parameters->comm, 0, 1, &(parameters->neighb[0]), &(parameters->neighb[1]));
 MPI_Cart_shift(parameters->comm, 1, 1, &(parameters->neighb[2]), &(parameters->neighb[3]));
 MPI_Cart_shift(parameters->comm, 2, 1, &(parameters->neighb[4]), &(parameters->neighb[5]));
@@ -62,7 +61,6 @@ if(parameters->local_rank==0){
   init_output(parameters);}
 
 Bank *my_sourcebank;
-///idk if the below is good
 my_sourcebank = init_bank(parameters->n_particles); ///
 
   // Set up material
@@ -87,12 +85,10 @@ mytally = init_tally(parameters);
   // Create source bank and initial source distribution
 if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0){
 distribute_sb(mycoords, parameters, prcperdim, source_bank, &my_sourcebank);
-printf("distrib_sb\n");
-//free_bank(source_bank);
 }
 else distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
-//printf("\nand... n=%d", my_sourcebank->n);
-  // Create (local) fission bank
+
+    // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
 
   ///set up a local keff array///
@@ -110,12 +106,9 @@ if(parameters->local_rank==0){
  t1 = MPI_Wtime();
 }
 
-///here we go
   run_eigenvalue(mybounds, parameters, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);
-//NOTE: segmentation fault somewhere in the above function
- ///but only at i_p == 1176
+//NOTE: segmentation fault somewhere in the above function(?)
 
-//printf("%d:eig complete!\n",parameters->local_rank);
 MPI_Barrier(parameters->comm);
 
 if(parameters->local_rank==0){
@@ -125,8 +118,6 @@ if(parameters->local_rank==0){
 
   printf("Simulation time: %f secs\n", t2-t1);
 }
-
-//  MPI_Type_free(&parameters->type);
 
   // Free memory
   free(keff); free(mykeff); 
