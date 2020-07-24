@@ -4,7 +4,7 @@ COMPILER = gnu
 OPTIMIZE = yes
 DEBUG    = no
 
-# Program and source code
+# Program source code
 
 PROGRAM = transport
 
