@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
   Parameters *parameters; // user defined parameters
   Geometry *geometry; // homogenous cube geometry
   Material *material; // problem material
-  Bank *source_bank; // array for particle source sites
+  Bank *source_bank, *my_sourcebank; // array for particle source sites
   Bank *fission_bank; // array for particle fission sites
   Tally *mytally, *global_tally; // scalar flux tallies
   double *keff, *mykeff; // effective multiplication factor
