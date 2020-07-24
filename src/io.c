@@ -255,7 +255,7 @@ void read_CLI(int argc, char *argv[], Parameters *parameters)
       else print_error("Error reading command line input '-bins'");
     }
 ///Whether to decompose domain automatically 
-///NOTE: currently will be overwritten by the presence of n_prc inputs
+///NOTE: currently will be overwritten by the presence of npx/npy/npz inputs
 else if(strcmp(arg, "-np_auto") == 0){
       if(++i < argc){
         if(strcasecmp(argv[i], "true") == 0)
