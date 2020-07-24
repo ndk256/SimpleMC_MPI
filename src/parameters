@@ -3,7 +3,7 @@
 ###################################################################
 
 # particles: number of particles to simulate
-particles=200
+particles=100
 
 # batches: number of batches
 batches=10
