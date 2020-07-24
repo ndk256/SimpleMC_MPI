@@ -50,11 +50,14 @@ Particle toz1[parameters->n_particles];
         transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p])); 
 }
 int tosend=0, stillsend=0;
+	
+MPI_Barrier(parameters->comm);
 	    
 do{
 stillsend=0;
 
-if(send_indices[0]>0 || send_indices[1]>0 || send_indices[2]>0 || send_indices[3]>0 || send_indices[4]>0 || send_indices[5]>0) {tosend=1;}
+if(send_indices[0]>0 || send_indices[1]>0 || send_indices[2]>0 || send_indices[3]>0 || send_indices[4]>0 || send_indices[5]>0) 
+{tosend=1;}
 else tosend=0;
 
 MPI_Barrier(parameters->comm);
