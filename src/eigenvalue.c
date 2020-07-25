@@ -114,16 +114,17 @@ if(parameters->local_rank==0){
      
       reset_tally(overall_tally);
     }}
-}
-reset_tally(tally);
-    
-if(parameters->local_rank==0){
+	if(parameters->local_rank==0){
 // Status text
     print_status(i_a, i_b, keff_batch, keff_mean, keff_std);
+	}
+}
+reset_tally(tally);
+   
   // Write out keff
-  if(parameters->write_keff == TRUE){
+  if(parameters->local_rank==0 && parameters->write_keff == TRUE){
     write_keff(keff, parameters->n_active, parameters->keff_file);
-  }}
+  }
   return;
 }
 
