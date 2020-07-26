@@ -136,8 +136,8 @@ MPI_Status status; int n_to_recv, recv_count=0;
 MPI_Request reqs[6];
 
 ///sending along x direction///
-MPI_Isend(tox0, send_indices[0]+1, p->type, p->neighb[0], 0, p->comm,&reqs[0]);
-MPI_Isend(tox1, send_indices[1]+1, p->type, p->neighb[1], 1, p->comm, &reqs[1]);
+MPI_Isend(tox0, send_indices[0], p->type, p->neighb[0], 0, p->comm,&reqs[0]);
+MPI_Isend(tox1, send_indices[1], p->type, p->neighb[1], 1, p->comm, &reqs[1]);
 
 send_indices[0]=0; send_indices[1]=0; ///resetting
 
@@ -180,8 +180,8 @@ MPI_Wait(&reqs[0], MPI_STATUS_IGNORE);
 MPI_Wait(&reqs[1], MPI_STATUS_IGNORE);
 
 ///here is where y sending should begin///
-MPI_Isend(toy0, send_indices[2]+1, p->type, p->neighb[2], 2, p->comm, &reqs[2]);
-MPI_Isend(toy1, send_indices[3]+1, p->type, p->neighb[3], 3, p->comm,&reqs[3]);
+MPI_Isend(toy0, send_indices[2], p->type, p->neighb[2], 2, p->comm, &reqs[2]);
+MPI_Isend(toy1, send_indices[3], p->type, p->neighb[3], 3, p->comm,&reqs[3]);
 
 send_indices[2]=0; send_indices[3]=0; ///resetting
 
