@@ -15,6 +15,8 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
   if(p->y<0) p->y =0.0;
   if(p->z<0) p->z = 0.0;
   ///TEMP--still need to figure out how particles are getting "out" ///
+    //Okay, I've figured out why: "corner" cases aren't handled properly in the original code
+     ///...Concerning.
     
     ///Find distance to boundary of process section
     d_e = dist_to_edge(p, local_bounds); ///    
@@ -135,11 +137,11 @@ double distance_to_collision(Material *material)
 void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int indices[])
 {
 if(p->x==localbounds[0]) {tox0[indices[0]] = *p; indices[0]++;}
- if(p->x==localbounds[1]) {tox1[indices[1]] = *p; indices[1]++;}
- if(p->y==localbounds[2]) {toy0[indices[2]] = *p; indices[2]++;}
- if(p->y==localbounds[3]) {toy1[indices[3]] = *p; indices[3]++;}
- if(p->z==localbounds[4]) {toz0[indices[4]] = *p; indices[4]++;}
- if(p->z==localbounds[5]) {toz1[indices[5]] = *p; indices[5]++;}
+else if(p->x==localbounds[1]) {tox1[indices[1]] = *p; indices[1]++;}
+else if(p->y==localbounds[2]) {toy0[indices[2]] = *p; indices[2]++;}
+else if(p->y==localbounds[3]) {toy1[indices[3]] = *p; indices[3]++;}
+else if(p->z==localbounds[4]) {toz0[indices[4]] = *p; indices[4]++;}
+else if(p->z==localbounds[5]) {toz1[indices[5]] = *p; indices[5]++;}
 
 p->alive=FALSE; ///this is merely temporary
 
