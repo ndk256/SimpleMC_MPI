@@ -5,7 +5,6 @@ int main(int argc, char *argv[])
     Parameters *parameters; // user defined parameters
     Geometry *geometry; // homogenous cube geometry
     Material *material; // problem material
-    Bank *source_bank; // array for particle source sites
     Bank *fission_bank; // array for particle fission sites
     Tally *global_tally, *mytally; // scalar flux tally
     double *keff, *mykeff; // effective multiplication factor
@@ -60,7 +59,7 @@ MPI_Cart_shift(parameters->comm, 2, 1, &(parameters->neighb[4]), &(parameters->n
 if(parameters->local_rank==0){
   init_output(parameters);}
 
-Bank *my_sourcebank;
+Bank *my_sourcebank; /// (local) array for particle source sites
 my_sourcebank = init_bank(parameters->n_particles); ///
 
   // Set up material
@@ -70,7 +69,7 @@ my_sourcebank = init_bank(parameters->n_particles); ///
  global_tally = init_tally(parameters);
 
 if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0){
-  source_bank = init_source_bank(parameters, geometry);
+  my_sourcebank = init_source_bank(parameters, geometry);
 }
 
   // Set up array for k effective
@@ -83,10 +82,7 @@ localize_parameters(parameters, prcperdim);
 mytally = init_tally(parameters);
 
   // Create source bank and initial source distribution
-if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0){
-distribute_sb(mycoords, parameters, prcperdim, source_bank, &my_sourcebank);
-}
-else distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
+distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
 
     // Create (local) fission bank
   fission_bank = init_fission_bank(parameters);
@@ -123,9 +119,7 @@ if(parameters->local_rank==0){
   free(keff); free(mykeff); 
  free_tally(mytally); free_tally(global_tally);  
 free_bank(fission_bank); 
-if(!(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0)) 
    free_bank(my_sourcebank); 
-else free_bank(source_bank);
 
  free_material(material);
   free(geometry);
