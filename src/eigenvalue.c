@@ -91,6 +91,8 @@ MPI_Barrier(parameters->comm);
       keff_gen = (double) total_fish / parameters->n_particles; ///ok to use parameters for that value?
       keff_batch += keff_gen;
 
+	    source_bank->n = parameters->n_particles/parameters->n_prc;
+	    if(parameters->local_rank==0&&parameters->n_particles%parameters->n_prc>0) source_bank->n++;
       // Sample new source particles from the particles that were added to the
       // fission bank during this generation
       synchronize_bank(source_bank, fission_bank);    
