@@ -44,6 +44,23 @@ p->n_prc_auto = TRUE;
   return p;
 }
 
+Buffer *init_buff(Parameters *parameters)
+  {
+  Buffer *b=malloc(sizeof(Buffer));
+  b->banksz[0] = parameters->n_particles/parameters->n_prc;
+  for(int i=1; i<6; i++)
+  b->banksz[i] = b->banksz[0];
+  b->tox0=calloc(b->banksz[0],sizeof(Particle));
+  b->tox1=calloc(b->banksz[0],sizeof(Particle));
+  b->toy0=calloc(b->banksz[0],sizeof(Particle));
+  b->toy1=calloc(b->banksz[0],sizeof(Particle));
+  b->toz0=calloc(b->banksz[0],sizeof(Particle));
+  b->toz1=calloc(b->banksz[0],sizeof(Particle));
+  for(int i=0; i<6; i++)
+  b->n_banked[i]=0;
+  return b;
+  }
+
 Geometry *init_geometry(Parameters *parameters)
 {
   Geometry *g = malloc(sizeof(Geometry));
@@ -190,6 +207,19 @@ void resize_particles(Bank *b)
 
   return;
 }
+
+void free_buf(Buffer *bf)
+ {
+ free(bf->tox0); free(bf->tox1);
+ free(bf->toy0); free(bf->toy1);
+ free(bf->toz0); free(bf->toz1);
+ bf->tox0=NULL;bf->tox1=NULL;
+ bf->toy0=NULL;bf->toy1=NULL;
+ bf->toz0=NULL;bf->toz1=NULL;
+ free(bf);
+ bf=NULL;
+ return;
+ }
 
 void free_bank(Bank *b)
 {
