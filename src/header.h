@@ -126,12 +126,10 @@ typedef struct Bank_{
   void (*resize)(struct Bank_ *b);
 } Bank;
 
-/*This is still under construction; please ignore it for now
 typedef struct Buffer_{
-  Particle* bank;
-  unsigned int banksz;
+  Particle *tox0, *tox1, *toy0, *toy1, *toz0, *toz1;
+  unsigned int banksz[6], n_banked[6];
 } Buffer;
-*/
 
 // io.c function prototypes
 void parse_parameters(Parameters *parameters);
@@ -158,6 +156,7 @@ void rn_skip(long long n);
 
 // initialize.c function prototypes
 Parameters *init_parameters(void);
+Buffer *init_buff(Parameters *parameters);
 Geometry *init_geometry(Parameters *parameters);
 Tally *init_tally(Parameters *parameters);
 Material *init_material(Parameters *parameters);
@@ -168,6 +167,7 @@ void sample_source_particle(Geometry *geometry, Particle *p);
 void sample_fission_particle(Particle *p, Particle *p_old);
 void resize_particles(Bank *b);
 void free_bank(Bank *b);
+void free_buf(Buffer *bf);
 void free_material(Material *material);
 void free_tally(Tally *tally);
 
@@ -182,12 +182,12 @@ double distance_to_collision(Material *material);
 double dist_to_edge(Particle *p, double s_coords[6]);
 void cross_surface(Geometry *geometry, Particle *p);
 void collision(Material *material, Bank *fission_bank, double nu, Particle *p);
-void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[], Bank *fission_bank, Tally *tally, Particle *p);
-void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int indices[]);
+void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Buffer* sendbuf, Bank *fission_bank, Tally *tally, Particle *p);
+void cross_process(double localbounds[], Particle *p, Buffer *sendbuf);
 
 // eigenvalue.c function prototypes
 void run_eigenvalue(double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff);
-void sendrecv_particles(Parameters *p, Bank *bank, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[6], double mybounds[6]);
+void sendrecv_particles(Parameters *p, Bank *bank, Buffer * sendbuf, double mybounds[6]);
 void synchronize_bank(Bank *source_bank, Bank *fission_bank);
 void calculate_keff(double *keff, double *mean, double *std, int n);
 
