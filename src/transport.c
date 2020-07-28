@@ -1,7 +1,7 @@
 #include "header.h"
 
 // Main logic to move particle
-void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[], Bank *fission_bank, Tally *tally, Particle *p)
+void transport(Parameters *parameters, Geometry *geometry, double local_bounds[], Material *material, Buffer *sendbuf, Bank *fission_bank, Tally *tally, Particle *p)
 {
 
   double d_b;
@@ -45,7 +45,7 @@ else d=d_c;
 ///case of crossing into another process's subdomain
 else if(d_e <= d_c && d_e <= d_b)
 {
-cross_process(local_bounds, p, tox0, tox1, toy0, toy1, toz0, toz1, send_indices);
+cross_process(local_bounds, p, sendbuf);
 }
 else{
     // Case where particle has collision
@@ -135,18 +135,49 @@ double distance_to_collision(Material *material)
 ///handles particle crossing into another process's subdomain
 ///simply sends it to a buffer which will be passed out to the appropriate process later on
 void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int indices[])
-{
-if(p->x==localbounds[0]) {tox0[indices[0]] = *p; indices[0]++;}
-else if(p->x==localbounds[1]) {tox1[indices[1]] = *p; indices[1]++;}
-else if(p->y==localbounds[2]) {toy0[indices[2]] = *p; indices[2]++;}
-else if(p->y==localbounds[3]) {toy1[indices[3]] = *p; indices[3]++;}
-else if(p->z==localbounds[4]) {toz0[indices[4]] = *p; indices[4]++;}
-else if(p->z==localbounds[5]) {toz1[indices[5]] = *p; indices[5]++;}
-
-p->alive=FALSE; ///this is merely temporary
-
-return;
-}
+void cross_process(double localbounds[], Particle *p, Buffer *sendbuf)
+ {
+ if(p->x<=localbounds[0]) {
+  if(sendbuf->n_banked[0]>=sendbuf->banksz[0])
+   {sendbuf->tox0=realloc(sendbuf->tox0, sizeof(Particle)*2*sendbuf->banksz[0    ]);
+    sendbuf->banksz[0] *= 2;}
+  sendbuf->tox0[sendbuf->n_banked[0]] = *p;
+  sendbuf->n_banked[0]++;}
+ else if(p->x>=localbounds[1]) {
+  if(sendbuf->n_banked[1]>=sendbuf->banksz[1])
+   {sendbuf->tox1=realloc(sendbuf->tox1, sizeof(Particle)*2*sendbuf->banksz[1]);
+    sendbuf->banksz[1] *= 2;}
+  sendbuf->tox1[sendbuf->n_banked[1]] = *p;
+  sendbuf->n_banked[1]++;}
+ else if(p->y<=localbounds[2]) {
+  if(sendbuf->n_banked[2]>=sendbuf->banksz[2])
+   {sendbuf->toy0=realloc(sendbuf->toy0, sizeof(Particle)*2*sendbuf->banksz[2]);
+    sendbuf->banksz[2] *= 2;}
+  sendbuf->toy0[sendbuf->n_banked[2]] = *p;
+  sendbuf->n_banked[2]++;}
+ else if(p->y>=localbounds[3]) {
+  if(sendbuf->n_banked[3]>=sendbuf->banksz[3])
+   {sendbuf->toy1=realloc(sendbuf->toy1, sizeof(Particle)*2*sendbuf->banksz[3]);
+    sendbuf->banksz[3] *= 2;}
+  sendbuf->toy1[sendbuf->n_banked[3]] = *p;
+  sendbuf->n_banked[3]++;}
+ else if(p->z<=localbounds[4]) {
+  if(sendbuf->n_banked[4]>=sendbuf->banksz[4])
+   {sendbuf->toz0=realloc(sendbuf->toz0, sizeof(Particle)*2*sendbuf->banksz[4]);
+    sendbuf->banksz[4] *= 2;}
+  sendbuf->toz0[sendbuf->n_banked[4]] = *p;
+  sendbuf->n_banked[4]++;}
+ else if(p->z>=localbounds[5]) {
+  if(sendbuf->n_banked[5]>=sendbuf->banksz[5])
+   {sendbuf->toz1=realloc(sendbuf->toz1, sizeof(Particle)*2*sendbuf->banksz[5]);
+    sendbuf->banksz[5] *= 2;}
+  sendbuf->toz1[sendbuf->n_banked[5]] = *p;
+  sendbuf->n_banked[5]++;}
+ 
+ p->alive=FALSE; ///this is merely temporary
+ 
+ return;
+ }
 
 // Handles a particle crossing a surface in the geometry
 void cross_surface(Geometry *geometry, Particle *p)
