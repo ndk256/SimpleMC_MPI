@@ -74,7 +74,7 @@ int i; double dist;
       }
       else{
         dist = (s_coords[i] - p_coords[i])/p_angles[i];
-      if(dist <= 0 || dist/p_angles[i]<=0){
+      if(dist < 0 || dist/p_angles[i]<=0){
          dist = D_INF;
 }
       
@@ -134,7 +134,6 @@ double distance_to_collision(Material *material)
 
 ///handles particle crossing into another process's subdomain
 ///simply sends it to a buffer which will be passed out to the appropriate process later on
-void cross_process(double localbounds[], Particle *p, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int indices[])
 void cross_process(double localbounds[], Particle *p, Buffer *sendbuf)
  {
  if(p->x<=localbounds[0]) {
@@ -189,27 +188,27 @@ void cross_surface(Geometry *geometry, Particle *p)
 
   // Handle reflective boundary conditions
   else if(geometry->bc == REFLECT){
-    if(p->surface_crossed == X0){
+    if(p->x < 0.0){
       p->u = -p->u;
       p->x = 0.0;
     }
-    else if(p->surface_crossed == X1){
+    else if(p->x > geometry->x){
       p->u = -p->u;
       p->x = geometry->x;
     }
-    else if(p->surface_crossed == Y0){
+    else if(p->y < 0.0){
       p->v = -p->v;
       p->y = 0.0;
     }
-    else if(p->surface_crossed == Y1){
+    else if(p->y > geometry->y){
       p->v = -p->v;
       p->y = geometry->y;
     }
-    else if(p->surface_crossed == Z0){
+    else if(p->z < 0.0){
       p->w = -p->w;
       p->z = 0.0;
     }
-    else if(p->surface_crossed == Z1){
+    else if(p->z > geometry->z){
       p->w = -p->w;
       p->z = geometry->z;
     }
