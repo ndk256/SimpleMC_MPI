@@ -31,13 +31,8 @@ void run_eigenvalue(double localbounds[6], Parameters *parameters, Geometry *geo
       set_stream(STREAM_TRACK);
 
       //set up buffer arrays for cross-process transport
-      Particle tox0[parameters->n_particles]; ///possibly overdoing it on size but idk
-Particle tox1[parameters->n_particles];
-Particle toy0[parameters->n_particles];
-Particle toy1[parameters->n_particles];
-Particle toz0[parameters->n_particles];
-Particle toz1[parameters->n_particles];
-      int send_indices[6] = { }; ///initializes empty array
+      Buffer *sendbuf = init_buff(parameters);
+	    
       // Loop over particles
       for(i_p=0; i_p<source_bank->n; i_p++){ //
 	// Set seed for particle i_p by skipping ahead in the random number
@@ -47,8 +42,8 @@ Particle toz1[parameters->n_particles];
 //^this will give some repetition still, but not as much as without multiplying by the local rank
 	      
         // Transport the next particle
-        transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p])); 
-}
+	transport(parameters, geometry, localbounds, material, sendbuf, fiss    ion_bank, tally, &(source_bank->p[i_p]));
+      }
 int tosend=0, stillsend=0;
 	
 MPI_Barrier(parameters->comm);
@@ -56,8 +51,8 @@ MPI_Barrier(parameters->comm);
 do{
 stillsend=0;
 
-if(send_indices[0]>0 || send_indices[1]>0 || send_indices[2]>0 || send_indices[3]>0 || send_indices[4]>0 || send_indices[5]>0) 
-{tosend=1;}
+if(sendbuf->n_banked[0]>0 || sendbuf->n_banked[1]>0 || sendbuf->n_banked[2]>0 || sendbuf->n_banked[3]>0 || sendbuf->n_banked[4]>0 || sendbuf->n_banked[5]>0) 
+{tosend=1;} //^ long line again, sorry
 else tosend=0;
 
 MPI_Barrier(parameters->comm);
@@ -66,14 +61,14 @@ MPI_Allreduce(&tosend, &stillsend, 1, MPI_INT, MPI_SUM, parameters->comm);
 if(stillsend==0) break;
 
 ///send particles to the instance of source_bank on the appropriate process
-sendrecv_particles(parameters, source_bank, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, localbounds);
-
+sendrecv_particles(parameters, source_bank, sendbuf, localbounds);
+	
   ///transport those particles
 for(i_p =0; i_p<source_bank->n; i_p++){ 
 	rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p*parameters->local_rank*parameters->local_rank);
 
 	///transport particle(s)
-	transport(parameters, geometry, localbounds, material, tox0, tox1, toy0, toy1, toz0, toz1, send_indices, fission_bank, tally, &(source_bank->p[i_p]));
+	transport(parameters, geometry, localbounds, material, sendbuf, fission_bank, tally, &(source_bank->p[i_p]));
   }
 }while(stillsend>0);
 
@@ -86,7 +81,6 @@ MPI_Barrier(parameters->comm);
 
 // Calculate generation k_effective and accumulate batch k_effective
       int total_fish;
-//printf("%d's fissions:%d\n", parameters->local_rank, fission_bank->n);
       MPI_Reduce(&fission_bank->n, &total_fish, 1, MPI_INT, MPI_SUM, 0, parameters->comm);
       keff_gen = (double) total_fish / parameters->n_particles; ///ok to use parameters for that value?
       keff_batch += keff_gen;
@@ -96,6 +90,7 @@ MPI_Barrier(parameters->comm);
       // Sample new source particles from the particles that were added to the
       // fission bank during this generation
       synchronize_bank(source_bank, fission_bank);    
+      free_buf(sendbuf);
 }
 
 if(parameters->local_rank==0){   
@@ -130,18 +125,16 @@ reset_tally(tally);
   return;
 }
 
-void sendrecv_particles(Parameters *p, Bank *bank, Particle tox0[], Particle tox1[], Particle toy0[], Particle toy1[], Particle toz0[], Particle toz1[], int send_indices[6], double mybounds[6])
-{
-/// To do: re-allocate bank->p memory? check if necessary
-	
+void sendrecv_particles(Parameters *p, Bank *bank, Buffer* sendbuf, double mybounds[6])
+{	
 MPI_Status status; int n_to_recv, recv_count=0;
 MPI_Request reqs[6];
 
 ///sending along x direction///
-MPI_Isend(tox0, send_indices[0], p->type, p->neighb[0], 0, p->comm,&reqs[0]);
-MPI_Isend(tox1, send_indices[1], p->type, p->neighb[1], 1, p->comm, &reqs[1]);
-
-send_indices[0]=0; send_indices[1]=0; ///resetting
+MPI_Isend(sendbuf->tox0, sendbuf->n_banked[0], p->type, p->neighb[0], 0, p->comm, &reqs[0]);
+MPI_Isend(sendbuf->tox1, sendbuf->n_banked[1], p->type, p->neighb[1], 1, p->comm, &reqs[1]);
+ 
+sendbuf->n_banked[0]=0; sendbuf->n_banked[1]=0; ///resetting
 
 ///get any particles that have crossed in from other processes via x
 MPI_Probe(p->neighb[0], 1, p->comm, &status); //this is blocking--is that desired?
@@ -164,28 +157,40 @@ for(int i=0; i<recv_count; i++)
 {bank->p[i].alive = TRUE;
 } ///if it's in the right place it can be deemed alive again
 else if(bank->p[i].y < mybounds[2]) {
-toy0[send_indices[2]] = bank->p[i]; 
-send_indices[2]++;
-}
+ if(sendbuf->banksz[2]<=sendbuf->n_banked[2]) {
+  sendbuf->toy0=realloc(sendbuf->toy0, 2*sendbuf->banksz[2]*sizeof(Particle));
+  sendbuf->banksz[2] *= 2;}
+ sendbuf->toy0[sendbuf->n_banked[2]] = bank->p[i];
+ sendbuf->n_banked[2]++;
+ }
 else if(bank->p[i].y >= mybounds[3]) {
-toy1[send_indices[3]] = bank->p[i];
- send_indices[3]++;}
+ if(sendbuf->banksz[3]<=sendbuf->n_banked[3]) {
+  sendbuf->toy1=realloc(sendbuf->toy1, sizeof(Particle)*2*sendbuf->banksz[3]);
+  sendbuf->banksz[3] *= 2;}
+ sendbuf->toy1[sendbuf->n_banked[3]] = bank->p[i];
+ sendbuf->n_banked[3]++;}
 else if(bank->p[i].z < mybounds[4]) {
-toz0[send_indices[4]] = bank->p[i]; 
-send_indices[4]++;}
+ if(sendbuf->banksz[4]<=sendbuf->n_banked[4]) {
+  sendbuf->toz0=realloc(sendbuf->toz0, sizeof(Particle)*2*sendbuf->banksz[4]);
+  sendbuf->banksz[4] *= 2;}
+ sendbuf->toz0[sendbuf->n_banked[4]] = bank->p[i];
+ sendbuf->n_banked[4]++;}
 else if(bank->p[i].z >= mybounds[5]) {
-toz1[send_indices[5]] = bank->p[i]; 
-send_indices[5]++;}
+ if(sendbuf->banksz[5]<=sendbuf->n_banked[5]) {
+  sendbuf->toz1=realloc(sendbuf->toz1, 2*sendbuf->banksz[5]*sizeof(Particle));
+  sendbuf->banksz[5] *= 2;}
+ sendbuf->toz1[sendbuf->n_banked[5]] = bank->p[i];
+ sendbuf->n_banked[5]++;}
 }
 
 MPI_Wait(&reqs[0], MPI_STATUS_IGNORE);
 MPI_Wait(&reqs[1], MPI_STATUS_IGNORE);
 
 ///here is where y sending should begin///
-MPI_Isend(toy0, send_indices[2], p->type, p->neighb[2], 2, p->comm, &reqs[2]);
-MPI_Isend(toy1, send_indices[3], p->type, p->neighb[3], 3, p->comm,&reqs[3]);
-
-send_indices[2]=0; send_indices[3]=0; ///resetting
+MPI_Isend(sendbuf->toy0, sendbuf->n_banked[2], p->type, p->neighb[2], 2, p->comm, &reqs[2]);
+MPI_Isend(sendbuf->toy1, sendbuf->n_banked[3], p->type, p->neighb[3], 3, p->comm, &reqs[3]);
+ 
+sendbuf->n_banked[2]=0; sendbuf->n_banked[3]=0; ///resetting
 
 MPI_Probe(p->neighb[2], 3, p->comm, &status);
 MPI_Get_count(&status, p->type, &n_to_recv);
@@ -201,29 +206,35 @@ MPI_Probe(p->neighb[3], 2, p->comm, &status);
 
 for(int i=b_ind; i<recv_count; i++) 
   {if(bank->p[i].z < mybounds[5] && bank->p[i].z >= mybounds[4])
-  {bank->p[i].alive = TRUE; } ///if it's in the right place it can be deemed alive agai    n
-  else if(bank->p[i].z < mybounds[4]) {
-toz0[send_indices[4]] = bank->p[i];
- send_indices[4]++;}
-  else if(bank->p[i].z >= mybounds[5]) {
-toz1[send_indices[5]] = bank->p[i]; 
-send_indices[5]++;}
-  }
+    {bank->p[i].alive = TRUE; } ///if it's in the right place it can be deemed alive agai    n
+   else if(bank->p[i].z < mybounds[4]) {
+    if(sendbuf->banksz[4]<=sendbuf->n_banked[4]) {
+     sendbuf->toz0=realloc(sendbuf->toz0, 2*sendbuf->banksz[4]*sizeof(Particle));
+     sendbuf->banksz[4] *= 2;}
+    sendbuf->toz0[sendbuf->n_banked[4]] = bank->p[i];
+    sendbuf->n_banked[4]++;}
+   else if(bank->p[i].z >= mybounds[5]) {
+    if(sendbuf->banksz[5]<=sendbuf->n_banked[5]) {
+     sendbuf->toz1=realloc(sendbuf->toz1, 2*sendbuf->banksz[5]*sizeof(Particle));
+     sendbuf->banksz[5] *= 2;}
+    sendbuf->toz1[sendbuf->n_banked[5]] = bank->p[i];
+    sendbuf->n_banked[5]++;}
+   }
 
 MPI_Wait(&reqs[2], MPI_STATUS_IGNORE);
 MPI_Wait(&reqs[3], MPI_STATUS_IGNORE);
 
 ///z sending////
-MPI_Isend(toz0, send_indices[4], p->type, p->neighb[4], 4, p->comm, &reqs[4]);
-MPI_Isend(toz1, send_indices[5], p->type, p->neighb[5], 5, p->comm, &reqs[5]);
-
-send_indices[4]=0; send_indices[5]=0;
+MPI_Isend(sendbuf->toz0, sendbuf->n_banked[4], p->type, p->neighb[4], 4, p->comm, &reqs[4]);
+MPI_Isend(sendbuf->toz1, sendbuf->n_banked[5], p->type, p->neighb[5], 5, p->comm, &reqs[5]);
+ 
+sendbuf->n_banked[4]=0; sendbuf->n_banked[5]=0;
 
 ////z receiving
 MPI_Probe(p->neighb[4], 5, p->comm, &status);
   MPI_Get_count(&status, p->type, &n_to_recv);
   
-  MPI_Recv(bank->p+recv_count, n_to_recv, p->type, p->neighb[4], 5, p->comm,     MPI_STATUS_IGNORE);
+  MPI_Recv(bank->p+recv_count, n_to_recv, p->type, p->neighb[4], 5, p->comm, MPI_STATUS_IGNORE);
   recv_count+=n_to_recv;
 
 MPI_Probe(p->neighb[5], 4, p->comm, &status);
@@ -239,7 +250,7 @@ MPI_Wait(&reqs[5], MPI_STATUS_IGNORE);
 for(int i=0; i<recv_count; i++)
 {bank->p[i].alive=TRUE;}
 
-///resize bank
+///resize bank?
 ////sourcebank->resize=resize_particles???
 bank->n = recv_count;
 //bank->sz = recv_count; //?
