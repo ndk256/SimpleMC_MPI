@@ -72,13 +72,15 @@ else
   // Set up array for k effective
   keff = calloc(parameters->n_active, sizeof(double));
 
-    ///set up tallies///
-mytally = init_tally(parameters);
+    ///set up tally
     globaltally = init_tally(parameters);
     
 // Localize parameters (dimensions)
 localize_parameters(parameters, prcperdim);
 
+    //set up local tally
+    mytally = init_tally(parameters);
+    
   // Create source bank and initial source distribution
 distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
 
