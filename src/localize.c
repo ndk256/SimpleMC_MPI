@@ -13,16 +13,17 @@ return;
 void distrib_particle(int d, int mycoords[], Parameters *par, int dim, Bank **sb)
 {
 int banksz = 0;
-Particle *send; send = (Particle*) malloc(((*sb)->n)*sizeof(Particle)); /// attempting to be dynamic 
+Particle *send; 
+send = (Particle*) malloc(((*sb)->n)*sizeof(Particle)); /// first dynamic line i wrote
  
 for(int i=1; i<d; i++) // move through the processes in the given dimension from nearest to farthest
 {
 
    for(int i_p=0; i_p<(*sb)->n; i_p++) // iterate through each particle to find if they belong on that process
-   {      
-/// this could be made more efficient; currently it will do a lot of double-checking
- int pcoords[3] = {(*sb)->p[i_p].x/par->gx, (*sb)->p[i_p].y/par->gy, (*sb)->p[i_p].z/par->gz}; 
-//using integer division to get process-level coords
+   {    
+      if((*sb)->p[i_p].alive){
+      int pcoords[3] = {(*sb)->p[i_p].x/par->gx, (*sb)->p[i_p].y/par->gy, (*sb)->p[i_p].z/par->gz}; 
+      //using integer division to get process-level coords
       /// modify ^ if repeated redeclarations isn't good
       
      if(pcoords[dim]!=mycoords[dim] && pcoords[dim]==i &&i!=mycoords[dim])
@@ -31,6 +32,7 @@ for(int i=1; i<d; i++) // move through the processes in the given dimension from
 	 banksz++;
          (*sb)->p[i_p].alive = FALSE;         
 	}
+   }
    }
 MPI_Request mpir = MPI_REQUEST_NULL;
    MPI_Isend(send, banksz, par->type, par->neighb[1+(dim*2)], dim, par->comm, &mpir); /// unsure about the last argument
@@ -58,7 +60,8 @@ distrib_particle(nprc[0], mycoords,p, 0, mysb);
 MPI_Barrier(p->comm);
 
 ///for all the processes handling (x, 0, 0)
-if(nprc[0]>1 &&mycoords[0]!=0 && mycoords[1]==0&&mycoords[2]==0) {      
+if(mycoords[1]==0 && mycoords[2]==0) {
+     if(mycoords[0]!=0 && nprc[0]>1){
 	MPI_Probe(MPI_ANY_SOURCE, 0, p->comm, &status);
       MPI_Get_count(&status, p->type, &msg_size);
       MPI_Recv((*mysb)->p, msg_size, p->type, MPI_ANY_SOURCE, 0, p->comm, MPI_STATUS_IGNORE);
@@ -68,30 +71,31 @@ index+=msg_size;
 
 for(int i=0; i<index; i++)
  (*mysb)->p[i].alive=TRUE;
-
+     }
 if(nprc[1]>1)
 distrib_particle(nprc[1], mycoords,p, 1, mysb);
 }
-MPI_Barrier(p->comm); //might be unnecc
+MPI_Barrier(p->comm); //very necc
 
 //for all the processes handling (x, y, 0)
-if(nprc[1]>1 && mycoords[2]==0 && mycoords[1]!=0) {
-MPI_Probe(MPI_ANY_SOURCE, 1, p->comm, &status);
+if(mycoords[2]==0) {
+   if(nprc[1]>1 && mycoords[1]!=0){
+	MPI_Probe(MPI_ANY_SOURCE, 1, p->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
 MPI_Recv((*mysb)->p+index, msg_size, p->type, MPI_ANY_SOURCE, 1, p->comm, &status);
 
 for(int i=index; i<index+msg_size; i++)
  (*mysb)->p[i].alive=TRUE;
 
+index+=msg_size;
+(*mysb)->n += msg_size;}
+	   	   
 if(nprc[2]>1)
 distrib_particle(nprc[2], mycoords,p, 2, mysb);
-
-index+=msg_size;
-(*mysb)->n += msg_size;
 }
 MPI_Barrier(p->comm);
 
-if(nprc[2] >1 && mycoords[2]!=0) {
+if(nprc[2] > 1 && mycoords[2]!=0) {
 MPI_Probe(MPI_ANY_SOURCE, 2, p->comm, &status);
 MPI_Get_count(&status, p->type, &msg_size);
 
@@ -101,8 +105,6 @@ MPI_Recv((*mysb)->p+index, msg_size, p->type, status.MPI_SOURCE, 2, p->comm, &st
 for(int i=index; i<index+msg_size; i++)
 (*mysb)->p[i].alive=TRUE;
 } 
-
-//mysb->p = realloc(mysb->p, sizeof(Particle)*index); ///no idea if this is right
 
 MPI_Barrier(p->comm);
 
