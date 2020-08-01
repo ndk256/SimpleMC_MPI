@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
     Geometry *geometry; // homogenous cube geometry
     Material *material; // problem material
     Bank *fission_bank; // array for particle fission sites
-    Tally *mytally; // scalar flux tally
+    Tally *mytally, *globaltally; // scalar flux tally
     double *keff, *mykeff; // effective multiplication factor
     double t1=12, t2; // timers
 
@@ -72,11 +72,12 @@ else
   // Set up array for k effective
   keff = calloc(parameters->n_active, sizeof(double));
 
+    ///set up tallies///
+mytally = init_tally(parameters);
+    globaltally = init_tally(parameters);
+    
 // Localize parameters (dimensions)
 localize_parameters(parameters, prcperdim);
-
-///set up local tallies///
-mytally = init_tally(parameters);
 
   // Create source bank and initial source distribution
 distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
@@ -100,7 +101,7 @@ if(parameters->local_rank==0){
     else t1 = timer();
 }
 
-  run_eigenvalue(mybounds, parameters, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);
+  run_eigenvalue(mybounds, parameters, geometry, material, my_sourcebank, fission_bank, globaltally, mytally, mykeff);
 
 MPI_Barrier(parameters->comm);
 
@@ -114,7 +115,7 @@ if(parameters->local_rank==0){
 
   // Free memory
   free(keff); free(mykeff); 
- free_tally(mytally);
+ free_tally(mytally); free_tally(globaltally);
 free_bank(fission_bank); 
    free_bank(my_sourcebank); 
 
