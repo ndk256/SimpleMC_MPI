@@ -52,7 +52,7 @@ do{
 stillsend=0;
 
 if(sendbuf->n_banked[0]>0 || sendbuf->n_banked[1]>0 || sendbuf->n_banked[2]>0 || sendbuf->n_banked[3]>0 || sendbuf->n_banked[4]>0 || sendbuf->n_banked[5]>0) 
-{tosend=1;} //^ long line again, sorry
+{tosend=1;}
 else tosend=0;
 
 MPI_Barrier(parameters->comm);
@@ -67,7 +67,6 @@ sendrecv_particles(parameters, source_bank, sendbuf, localbounds);
 for(i_p =0; i_p<source_bank->n; i_p++){ 
 	rn_skip((i_b*parameters->n_generations+i_g)*parameters->n_particles+i_p*parameters->local_rank*parameters->local_rank);
 
-	///transport particle(s)
 	transport(parameters, geometry, localbounds, material, sendbuf, fission_bank, tally, &(source_bank->p[i_p]));
   }
 }while(stillsend>0);
@@ -86,7 +85,8 @@ MPI_Barrier(parameters->comm);
       keff_batch += keff_gen;
 
 	    source_bank->n = parameters->n_particles/parameters->n_prc;
-	    if(parameters->local_rank==0&&parameters->n_particles%parameters->n_prc>0) source_bank->n++;
+	    if(parameters->local_rank==0&&parameters->n_particles%parameters->n_prc>0) 
+		    source_bank->n++=parameters->n_particles%parameters->n_prc;
       // Sample new source particles from the particles that were added to the
       // fission bank during this generation
       synchronize_bank(source_bank, fission_bank);    
@@ -105,7 +105,6 @@ if(parameters->local_rank==0){
    if(tally->tallies_on == TRUE){
       if(parameters->write_tally == TRUE)
        {
-        Tally *overall_tally = init_tally(parameters);///
 	MPI_Reduce(tally->flux, overall_tally->flux, tally->n*tally->n*tally->n, MPI_DOUBLE, MPI_SUM, 0, parameters->comm); ///check what the size of tally->flux[] is
  if(parameters->local_rank==0) write_tally(overall_tally, parameters->tally_file);///
      
@@ -250,10 +249,7 @@ MPI_Wait(&reqs[5], MPI_STATUS_IGNORE);
 for(int i=0; i<recv_count; i++)
 {bank->p[i].alive=TRUE;}
 
-///resize bank?
-////sourcebank->resize=resize_particles???
 bank->n = recv_count;
-//bank->sz = recv_count; //?
 	
 return;
 }
