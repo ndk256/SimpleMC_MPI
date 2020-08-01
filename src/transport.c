@@ -10,13 +10,6 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
   double d;
 
   while(p->alive){
- 
-    if(p->x<0) p->x=0.0;
-  if(p->y<0) p->y =0.0;
-  if(p->z<0) p->z = 0.0;
-  ///TEMP--still need to figure out how particles are getting "out" ///
-    //Okay, I've figured out why: "corner" cases aren't handled properly in the original code
-     ///...Concerning.
     
     ///Find distance to boundary of process section
     d_e = dist_to_edge(p, local_bounds); ///    
@@ -218,21 +211,51 @@ void cross_surface(Geometry *geometry, Particle *p)
   else if(geometry->bc == PERIODIC){
     if(p->surface_crossed == X0){
       p->x = geometry->x;
+      if(sendbuf->n_banked[0]>=sendbuf->banksz[0])
+   {sendbuf->tox0=realloc(sendbuf->tox0, sizeof(Particle)*2*sendbuf->banksz[0]);
+    sendbuf->banksz[0] *= 2;}
+  sendbuf->tox0[sendbuf->n_banked[0]] = *p;
+  sendbuf->n_banked[0]++;
     }
     else if(p->surface_crossed == X1){
       p->x = 0;
+      if(sendbuf->n_banked[1]>=sendbuf->banksz[1])
+   {sendbuf->tox1=realloc(sendbuf->tox1, sizeof(Particle)*2*sendbuf->banksz[1]);
+    sendbuf->banksz[1] *= 2;}
+  sendbuf->tox1[sendbuf->n_banked[1]] = *p;
+  sendbuf->n_banked[1]++;
     }
     else if(p->surface_crossed == Y0){
       p->y = geometry->y;
+      if(sendbuf->n_banked[2]>=sendbuf->banksz[2])
+   {sendbuf->toy0=realloc(sendbuf->toy0, sizeof(Particle)*2*sendbuf->banksz[2]);
+    sendbuf->banksz[2] *= 2;}
+  sendbuf->toy0[sendbuf->n_banked[2]] = *p;
+  sendbuf->n_banked[2]++;
     }
     else if(p->surface_crossed == Y1){
       p->y = 0;
+      if(sendbuf->n_banked[3]>=sendbuf->banksz[3])
+   {sendbuf->toy1=realloc(sendbuf->toy1, sizeof(Particle)*2*sendbuf->banksz[3]);
+    sendbuf->banksz[3] *= 2;}
+  sendbuf->toy1[sendbuf->n_banked[3]] = *p;
+  sendbuf->n_banked[3]++;
     }
     else if(p->surface_crossed == Z0){
       p->z = geometry->z;
+      if(sendbuf->n_banked[4]>=sendbuf->banksz[4])
+   {sendbuf->toz0=realloc(sendbuf->toz0, sizeof(Particle)*2*sendbuf->banksz[4]);
+    sendbuf->banksz[4] *= 2;}
+  sendbuf->toz0[sendbuf->n_banked[4]] = *p;
+  sendbuf->n_banked[4]++;
     }
     else if(p->surface_crossed == Z1){
       p->z = 0;
+      if(sendbuf->n_banked[5]>=sendbuf->banksz[5])
+   {sendbuf->toz1=realloc(sendbuf->toz1, sizeof(Particle)*2*sendbuf->banksz[5]);
+    sendbuf->banksz[5] *= 2;}
+  sendbuf->toz1[sendbuf->n_banked[5]] = *p;
+  sendbuf->n_banked[5]++;
     }
   }
 
