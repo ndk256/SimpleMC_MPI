@@ -127,8 +127,8 @@ typedef struct Bank_{
 } Bank;
 
 typedef struct Buffer_{
-  Particle *tox0, *tox1, *toy0, *toy1, *toz0, *toz1;
   unsigned int banksz[6], n_banked[6];
+  Particle *tox0, *tox1, *toy0, *toy1, *toz0, *toz1;
 } Buffer;
 
 // io.c function prototypes
@@ -186,7 +186,7 @@ void transport(Parameters *parameters, Geometry *geometry, double local_bounds[]
 void cross_process(double localbounds[], Particle *p, Buffer *sendbuf);
 
 // eigenvalue.c function prototypes
-void run_eigenvalue(double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *tally, double *keff);
+void run_eigenvalue(double localbounds[6], Parameters *parameters, Geometry *geometry, Material *material, Bank *source_bank, Bank *fission_bank, Tally *overall_tally,Tally *tally, double *keff);
 void sendrecv_particles(Parameters *p, Bank *bank, Buffer * sendbuf, double mybounds[6]);
 void synchronize_bank(Bank *source_bank, Bank *fission_bank);
 void calculate_keff(double *keff, double *mean, double *std, int n);
