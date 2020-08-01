@@ -49,15 +49,15 @@ Buffer *init_buff(Parameters *parameters)
   Buffer *b=malloc(sizeof(Buffer));
   b->banksz[0] = parameters->n_particles/parameters->n_prc;
   for(int i=1; i<6; i++)
-  b->banksz[i] = b->banksz[0];
-  b->tox0=calloc(b->banksz[0],sizeof(Particle));
-  b->tox1=calloc(b->banksz[0],sizeof(Particle));
-  b->toy0=calloc(b->banksz[0],sizeof(Particle));
-  b->toy1=calloc(b->banksz[0],sizeof(Particle));
-  b->toz0=calloc(b->banksz[0],sizeof(Particle));
-  b->toz1=calloc(b->banksz[0],sizeof(Particle));
+    b->banksz[i] = b->banksz[0];
+  b->tox0=malloc(b->banksz[0]*sizeof(Particle));
+  b->tox1=malloc(b->banksz[0]*sizeof(Particle));
+  b->toy0=malloc(b->banksz[0]*sizeof(Particle));
+  b->toy1=malloc(b->banksz[0]*sizeof(Particle));
+  b->toz0=malloc(b->banksz[0]*sizeof(Particle));
+  b->toz1=malloc(b->banksz[0]*sizeof(Particle));
   for(int i=0; i<6; i++)
-  b->n_banked[i]=0;
+    b->n_banked[i]=0;
   return b;
   }
 
