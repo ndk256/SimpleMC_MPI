@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
     Geometry *geometry; // homogenous cube geometry
     Material *material; // problem material
     Bank *fission_bank; // array for particle fission sites
-    Tally *global_tally, *mytally; // scalar flux tally
+    Tally *mytally; // scalar flux tally
     double *keff, *mykeff; // effective multiplication factor
     double t1=12, t2; // timers
 
@@ -19,7 +19,6 @@ MPI_Init(&argc, &argv); ///
     read_CLI(argc, argv, parameters);
 
 int prcperdim[3]={0}, periodicity[3]={1,1,1}; ///{0,0,0};
- ///possibly reconsider these namings for greater clarity
 
   // Set up geometry
    geometry = init_geometry(parameters);
@@ -60,17 +59,15 @@ if(parameters->local_rank==0){
   init_output(parameters);}
 
 Bank *my_sourcebank; /// (local) array for particle source sites
-my_sourcebank = init_bank(parameters->n_particles); ///
 
   // Set up material
   material = init_material(parameters);
 
-  // Set up overall tally
- global_tally = init_tally(parameters);
-
 if(mycoords[0]==0&&mycoords[1]==0&&mycoords[2]==0){
   my_sourcebank = init_source_bank(parameters, geometry);
 }
+else
+    my_sourcebank = init_bank(parameters->n_particles); ///
 
   // Set up array for k effective
   keff = calloc(parameters->n_active, sizeof(double));
@@ -88,7 +85,7 @@ distribute_sb(mycoords, parameters, prcperdim, my_sourcebank, &my_sourcebank);
   fission_bank = init_fission_bank(parameters);
 
   ///set up a local keff array///
-mykeff = calloc(parameters->n_active,sizeof(double)); ///can i just do this?
+mykeff = calloc(parameters->n_active,sizeof(double));
 
 MPI_Barrier(parameters->comm);
 
@@ -97,27 +94,27 @@ if(parameters->local_rank==0){
   border_print();
   printf("%-15s %-15s %-15s\n", "BATCH", "KEFF", "MEAN KEFF");
 
- // Start time
- // t1 = timer();
- t1 = MPI_Wtime();
+ // Start timer
+ if(MPI_WTIME_IS_GLOBAL)
+    t1 = MPI_Wtime();
+    else t1 = timer();
 }
 
   run_eigenvalue(mybounds, parameters, geometry, material, my_sourcebank, fission_bank, mytally, mykeff);
-//NOTE: segmentation fault somewhere in the above function(?)
 
 MPI_Barrier(parameters->comm);
 
 if(parameters->local_rank==0){
-  // Stop time
-///^that's pretty dramatic
-  t2 =MPI_Wtime();// timer();
+  // Stop timer
+  if(MPI_WTIME_IS_GLOBAL) t2 =MPI_Wtime();
+    else t2 = timer();
 
   printf("Simulation time: %f secs\n", t2-t1);
 }
 
   // Free memory
   free(keff); free(mykeff); 
- free_tally(mytally); free_tally(global_tally);  
+ free_tally(mytally);
 free_bank(fission_bank); 
    free_bank(my_sourcebank); 
 
